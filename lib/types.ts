@@ -31,7 +31,7 @@ export type Friend = {
 export type BattleRecord = {
   id: string;
   date: string;
-  game: "ttt" | "rps";
+  game: "ttt" | "rps" | "guess";
   playerA: string;
   playerB: string;
   winner: string;

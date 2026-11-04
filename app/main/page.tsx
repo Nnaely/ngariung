@@ -9,16 +9,13 @@ import { checkedInToday, todayCheckIns, useStore } from "@/lib/store";
 import {
   dailyTeka,
   dailyWord,
-  RPS_LABEL,
-  rpsResult,
   tttWinner,
   type Cell,
-  type RpsChoice,
 } from "@/lib/games";
 import { todayWIB } from "@/lib/format";
 import type { BattleRecord } from "@/lib/types";
 
-type GameKey = "ttt" | "rps";
+type GameKey = "ttt" | "guess";
 
 export default function MainPage() {
   return (
@@ -36,7 +33,13 @@ function Main() {
   const atPancong = checkedInToday(state);
   const present = todayCheckIns(state).filter((c) => c.username !== user.username);
 
-  const [game, setGame] = useState<GameKey>("ttt");
+  const [game, setGame] = useState<GameKey>(() => {
+    const g =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("game")
+        : null;
+    return g === "guess" ? "guess" : "ttt";
+  });
   const [opponent, setOpponent] = useState(() =>
     typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("lawan") ?? ""
@@ -149,7 +152,7 @@ function Main() {
               {(
                 [
                   ["ttt", "Tic-Tac-Toe"],
-                  ["rps", "Batu Gunting Kertas"],
+                  ["guess", "Tebak Angka"],
                 ] as const
               ).map(([key, label]) => (
                 <button
@@ -213,7 +216,7 @@ function Main() {
                 }}
               />
             ) : (
-              <Rps
+              <GuessNumber
                 me={user.username}
                 opponent={matchOpp}
                 onWin={record}
@@ -429,9 +432,9 @@ function TicTacToe({
   );
 }
 
-/* ---------------- Batu Gunting Kertas ---------------- */
+/* ---------------- Tebak Angka ---------------- */
 
-function Rps({
+function GuessNumber({
   me,
   opponent,
   onWin,
@@ -442,99 +445,105 @@ function Rps({
   onWin: (winner: string) => void;
   onReset: () => void;
 }) {
-  const [phase, setPhase] = useState<"A" | "B" | "reveal">("A");
-  const [pickA, setPickA] = useState<RpsChoice | null>(null);
-  const [pickB, setPickB] = useState<RpsChoice | null>(null);
-  const [score, setScore] = useState({ a: 0, b: 0 });
+  const [secret, setSecret] = useState(() => 1 + Math.floor(Math.random() * 100));
+  const [turn, setTurn] = useState<"A" | "B">("A");
+  const [input, setInput] = useState("");
+  const [log, setLog] = useState<
+    { who: "A" | "B"; n: number; hint: "kecil" | "besar" | "tepat" }[]
+  >([]);
   const [done, setDone] = useState(false);
 
-  const choose = (choice: RpsChoice) => {
+  const name = (s: "A" | "B") => (s === "A" ? me : opponent);
+
+  const submit = () => {
     if (done) return;
-    if (phase === "A") {
-      setPickA(choice);
-      setPhase("B");
+    const n = Number(input);
+    if (!Number.isInteger(n) || n < 1 || n > 100) return;
+
+    if (n === secret) {
+      setLog((l) => [...l, { who: turn, n, hint: "tepat" }]);
+      setDone(true);
+      onWin(name(turn));
       return;
     }
-    if (phase === "B" && pickA) {
-      const r = rpsResult(pickA, choice);
-      const next = {
-        a: score.a + (r === "A" ? 1 : 0),
-        b: score.b + (r === "B" ? 1 : 0),
-      };
-      setScore(next);
-      setPickB(choice);
-      setPhase("reveal");
-      if (next.a >= 2) {
-        setDone(true);
-        onWin(me);
-      } else if (next.b >= 2) {
-        setDone(true);
-        onWin(opponent);
-      }
-    }
+
+    setLog((l) => [...l, { who: turn, n, hint: n < secret ? "kecil" : "besar" }]);
+    setTurn(turn === "A" ? "B" : "A");
+    setInput("");
   };
 
-  const nextRound = () => {
-    setPickA(null);
-    setPickB(null);
-    setPhase("A");
+  const restart = () => {
+    setSecret(1 + Math.floor(Math.random() * 100));
+    setTurn("A");
+    setInput("");
+    setLog([]);
+    setDone(false);
   };
 
   return (
     <div className="mt-4">
-      <div className="flex items-center justify-between text-[11px] text-muted">
-        <span>
-          {me} {score.a}
-        </span>
-        <span>first to 2</span>
-        <span>
-          {score.b} {opponent}
-        </span>
-      </div>
+      <p className="text-center text-[12px] font-semibold">
+        {done ? `${name(turn)} menebak ${secret}` : `Giliran ${name(turn)}`}
+      </p>
+      <p className="mt-1 text-center text-[10.5px] text-muted">
+        Angka rahasia 1–100. Yang menebak tepat menang.
+      </p>
 
-      {phase !== "reveal" ? (
-        <>
-          <p className="mt-4 text-center text-[12px] font-semibold">
-            {phase === "A" ? `Giliran ${me}` : `Serahkan HP ke ${opponent}`}
-          </p>
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {(Object.keys(RPS_LABEL) as RpsChoice[]).map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => choose(c)}
-                className="btn-quiet py-3.5 text-[12px]"
-              >
-                {RPS_LABEL[c]}
-              </button>
-            ))}
-          </div>
-        </>
-      ) : (
-        <div className="mt-4 text-center">
-          <div className="flex items-center justify-center gap-4 text-[13px] font-semibold">
-            <span className="text-flame">{pickA && RPS_LABEL[pickA]}</span>
-            <span className="text-muted">vs</span>
-            <span className="text-ice">{pickB && RPS_LABEL[pickB]}</span>
-          </div>
-          <p className="mt-2 text-[11.5px] text-muted">
-            {pickA && pickB
-              ? rpsResult(pickA, pickB) === "draw"
-                ? "Seri"
-                : rpsResult(pickA, pickB) === "A"
-                  ? `${me} menang ronde ini`
-                  : `${opponent} menang ronde ini`
-              : ""}
-          </p>
+      {!done && (
+        <div className="mt-3 flex gap-2">
+          <input
+            value={input}
+            onChange={(e) =>
+              setInput(e.target.value.replace(/[^0-9]/g, "").slice(0, 3))
+            }
+            onKeyDown={(e) => e.key === "Enter" && submit()}
+            inputMode="numeric"
+            placeholder="1–100"
+            className="field flex-1 px-4 py-2.5 text-center text-[15px] outline-none"
+          />
           <button
             type="button"
-            onClick={done ? onReset : nextRound}
-            className="btn-accent mt-4 w-full py-2.5 text-[12px]"
+            onClick={submit}
+            className="btn-accent px-5 text-[12.5px]"
           >
-            {done ? "Selesai" : "Ronde berikutnya"}
+            Tebak
           </button>
         </div>
       )}
+
+      <ul className="mt-3 space-y-1">
+        {log
+          .slice(-5)
+          .reverse()
+          .map((g, i) => (
+            <li
+              key={i}
+              className="flex items-center justify-between rounded-[10px] border border-line px-3 py-2 text-[11.5px]"
+            >
+              <span className="w-24 truncate text-muted">{name(g.who)}</span>
+              <span className="tabular font-semibold">{g.n}</span>
+              <span
+                className={`text-[10.5px] ${
+                  g.hint === "tepat" ? "text-mint" : "text-amber"
+                }`}
+              >
+                {g.hint === "tepat"
+                  ? "tepat!"
+                  : g.hint === "kecil"
+                    ? "terlalu kecil"
+                    : "terlalu besar"}
+              </span>
+            </li>
+          ))}
+      </ul>
+
+      <button
+        type="button"
+        onClick={done ? onReset : restart}
+        className="btn-quiet mt-4 w-full py-2.5 text-[12px]"
+      >
+        {done ? "Selesai" : "Acak ulang"}
+      </button>
     </div>
   );
 }

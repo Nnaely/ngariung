@@ -1,7 +1,6 @@
 /* Logika permainan — murni, tanpa React. */
 
 export type Cell = "X" | "O" | null;
-export type RpsChoice = "batu" | "gunting" | "kertas";
 
 export const KATA_WORDS = [
   "BUNGA",
@@ -153,19 +152,3 @@ export function tttWinner(board: Cell[]): "X" | "O" | "draw" | null {
   }
   return board.every(Boolean) ? "draw" : null;
 }
-
-export function rpsResult(a: RpsChoice, b: RpsChoice): "A" | "B" | "draw" {
-  if (a === b) return "draw";
-  const wins: Record<RpsChoice, RpsChoice> = {
-    batu: "gunting",
-    gunting: "kertas",
-    kertas: "batu",
-  };
-  return wins[a] === b ? "A" : "B";
-}
-
-export const RPS_LABEL: Record<RpsChoice, string> = {
-  batu: "Batu",
-  gunting: "Gunting",
-  kertas: "Kertas",
-};

@@ -31,7 +31,7 @@ Semua mahasiswa yang punya email aktif **@polban.ac.id**. Email lain (Gmail, Yah
 | Notifikasi | Teman dapat kabar tiap kamu absen |
 | Feed hari ini | Daftar siapa saja yang sudah absen hari ini |
 | Papan peringkat | Urutan streak dan total absen 7 hari terakhir |
-| Battle minigame | Tic-Tac-Toe & Batu Gunting Kertas, terbuka setelah absen |
+| Battle minigame | Tic-Tac-Toe & Tebak Angka, terbuka setelah absen |
 | Game harian | Tebak Kata & Teka-teki, satu soal per hari |
 | Peringkat game | Rank battle dan rank harian terpisah |
 | Username | Bisa diganti kapan saja |
@@ -104,9 +104,10 @@ Menu **Main** isinya dua hal: battle bareng teman dan permainan harian.
 
 Battle cuma terbuka kalau kamu **sudah absen hari ini** — memang dibuat untuk dimainkan saat kalian benar-benar sedang nongkrong di Pancong. Caranya:
 
-1. Buka **Main**, pilih game: **Tic-Tac-Toe** atau **Batu Gunting Kertas**.
+1. Buka **Main**, pilih game: **Tic-Tac-Toe** atau **Tebak Angka**.
 2. Isi nama lawan (atau pilih dari daftar teman yang sudah absen hari ini).
-3. Main bergantian di satu HP. Pemain pertama jadi **X**, lawan jadi **O**.
+3. **Tic-Tac-Toe**: main bergantian di satu HP, pemain pertama jadi **X**, lawan jadi **O**.
+   **Tebak Angka**: angka rahasia 1-100, tebak bergantian, yang tepat menang.
 4. Pemenang otomatis masuk ke **Rank battle**.
 
 ### Game harian (1 soal per hari)
