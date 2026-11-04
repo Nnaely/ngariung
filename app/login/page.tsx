@@ -97,14 +97,11 @@ export default function LoginPage() {
 
       <div className="flex flex-1 flex-col justify-center py-8">
         <p className="eyebrow">Absen harian · Polban</p>
-        <h1 className="mt-3 text-[40px] font-bold leading-[1.02] tracking-[-0.045em]">
-          Absen dulu,
-          <br />
-          <span className="text-flame">nongkrong nanti.</span>
+        <h1 className="mt-3 text-[44px] font-extrabold leading-[0.98] tracking-[-0.045em]">
+          Mancong<span className="text-flame">Yuk!</span>
         </h1>
         <p className="mt-4 max-w-[320px] text-[13.5px] leading-relaxed text-muted">
-          Kumpulkan streak dan dapatkan ranking. Cuma buat mahasiswa dengan email
-          kampus.
+          Kumpulkan streak dan raih peringkat tertinggi di leaderboard.
         </p>
       </div>
 
