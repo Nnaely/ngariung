@@ -7,7 +7,7 @@ import { Avatar } from "@/components/Avatar";
 
 const EMAIL_RE = /^[^@\s]+@polban\.ac\.id$/i;
 const USERNAME_RE = /^[a-z0-9](?:[a-z0-9._]{1,18})[a-z0-9]$/;
-const RESERVED = ["admin", "ngariung", "polban", "pancong", "root", "support"];
+const RESERVED = ["admin", "ngariung", "polban", "mancong", "root", "support"];
 
 const EMOJIS = ["🔥", "😎", "🌻", "🐧", "🍓", "⚡", "🐱", "🎧", "🍊", "🌙"];
 const COLORS = [
@@ -102,9 +102,9 @@ export default function LoginPage() {
           <br />
           <span className="text-flame">nongkrong nanti.</span>
         </h1>
-        <p className="mt-4 max-w-[310px] text-[13.5px] leading-relaxed text-muted">
-          Kumpulkan streak kehadiran di Pancong. Cuma buat mahasiswa dengan
-          email kampus.
+        <p className="mt-4 max-w-[320px] text-[13.5px] leading-relaxed text-muted">
+          Kumpulkan streak dan dapatkan ranking. Cuma buat mahasiswa dengan email
+          kampus.
         </p>
       </div>
 
