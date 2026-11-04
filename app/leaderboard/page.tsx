@@ -12,6 +12,7 @@ type Entry = {
   username: string;
   emoji: string;
   color: string;
+  avatarUrl?: string;
   streak: number;
   week: number;
   isMe: boolean;
@@ -41,13 +42,19 @@ function Leaderboard() {
     const weekStart = shiftDays(today, -6);
     const map = new Map<string, Entry>();
 
-    const ensure = (username: string, emoji: string, color: string) => {
+    const ensure = (
+      username: string,
+      emoji: string,
+      color: string,
+      avatarUrl?: string,
+    ) => {
       let e = map.get(username);
       if (!e) {
         e = {
           username,
           emoji,
           color,
+          avatarUrl,
           streak: 0,
           week: 0,
           isMe: username === user.username,
@@ -58,14 +65,15 @@ function Leaderboard() {
     };
 
     for (const c of state.checkIns) {
-      const e = ensure(c.username, c.emoji, c.color);
+      const e = ensure(c.username, c.emoji, c.color, c.avatarUrl);
       e.streak = Math.max(e.streak, c.streak);
       if (c.date >= weekStart) e.week += 1;
       e.emoji = c.emoji;
       e.color = c.color;
+      e.avatarUrl = c.avatarUrl;
     }
 
-    ensure(user.username, user.emoji, user.color);
+    ensure(user.username, user.emoji, user.color, user.avatarUrl);
     const me = map.get(user.username);
     if (me) me.streak = Math.max(me.streak, state.streak.current);
 
@@ -120,7 +128,12 @@ function Leaderboard() {
               >
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <Avatar emoji={e.emoji} color={e.color} size={36} />
+              <Avatar
+                emoji={e.emoji}
+                color={e.color}
+                src={e.avatarUrl}
+                size={36}
+              />
               <p className="min-w-0 flex-1 truncate text-[13px] font-medium">
                 {e.username}
                 {e.isMe && (

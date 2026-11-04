@@ -6,7 +6,12 @@ import { relativeTime, timeWIB } from "@/lib/format";
 export function FeedRow({ item, isMe }: { item: CheckIn; isMe?: boolean }) {
   return (
     <div className="flex items-center gap-3 py-3">
-      <Avatar emoji={item.emoji} color={item.color} size={36} />
+      <Avatar
+        emoji={item.emoji}
+        color={item.color}
+        src={item.avatarUrl}
+        size={36}
+      />
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-1.5 truncate text-[13px] font-medium">
           {item.username}

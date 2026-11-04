@@ -185,6 +185,7 @@ function Home() {
         username: user.username,
         emoji: user.emoji,
         color: user.color,
+        avatarUrl: user.avatarUrl,
         at: new Date().toISOString(),
         date: today,
         streak: result.streak.current,
@@ -217,7 +218,12 @@ function Home() {
               Halo, {user.username} 👋
             </h1>
           </div>
-          <Avatar emoji={user.emoji} color={user.color} size={42} />
+          <Avatar
+            emoji={user.emoji}
+            color={user.color}
+            src={user.avatarUrl}
+            size={42}
+          />
         </header>
 
         {/* lokasi */}
@@ -399,6 +405,7 @@ function Home() {
                     key={f.id}
                     emoji={f.emoji}
                     color={f.color}
+                    src={f.avatarUrl}
                     size={38}
                     className="ring-2 ring-bg"
                   />

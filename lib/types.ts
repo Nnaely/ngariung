@@ -3,6 +3,8 @@ export type User = {
   username: string;
   emoji: string;
   color: string;
+  /** Foto avatar (data URL, sudah dikompres). Kalau ada, menang atas emoji. */
+  avatarUrl?: string;
 };
 
 export type CheckIn = {
@@ -10,6 +12,7 @@ export type CheckIn = {
   username: string;
   emoji: string;
   color: string;
+  avatarUrl?: string;
   /** ISO timestamp */
   at: string;
   /** YYYY-MM-DD (Asia/Jakarta) */

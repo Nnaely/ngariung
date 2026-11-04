@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Guard } from "@/components/Guard";
 import { BottomNav } from "@/components/BottomNav";
@@ -15,6 +15,7 @@ import {
 import { useStore } from "@/lib/store";
 import { effectiveFreezes, FREEZES_PER_MONTH } from "@/lib/streak";
 import { monthName, nextMonthStartLabel, todayWIB } from "@/lib/format";
+import { fileToAvatar } from "@/lib/image";
 
 const USERNAME_RE = /^[a-z0-9](?:[a-z0-9._]{1,18})[a-z0-9]$/;
 const EMOJIS = ["🔥", "😎", "🌻", "🐧", "🍓", "⚡", "🐱", "🎧", "🍊", "🌙"];
@@ -36,6 +37,8 @@ function Profile() {
   const [draft, setDraft] = useState(user.username);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [busyPhoto, setBusyPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [permission, setPermission] = useState<
     NotificationPermission | "unsupported"
   >("default");
@@ -86,7 +89,37 @@ function Profile() {
     const color = COLORS[EMOJIS.indexOf(emoji) % COLORS.length];
     update((s) => ({
       ...s,
-      user: s.user ? { ...s.user, emoji, color } : s.user,
+      user: s.user ? { ...s.user, emoji, color, avatarUrl: undefined } : s.user,
+    }));
+  };
+
+  const onPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setPhotoError(null);
+    setBusyPhoto(true);
+    try {
+      const dataUrl = await fileToAvatar(file);
+      update((s) => ({
+        ...s,
+        user: s.user ? { ...s.user, avatarUrl: dataUrl } : s.user,
+      }));
+    } catch (err) {
+      setPhotoError(
+        err instanceof Error ? err.message : "Gagal memuat foto.",
+      );
+    } finally {
+      setBusyPhoto(false);
+    }
+  };
+
+  const removePhoto = () => {
+    setPhotoError(null);
+    update((s) => ({
+      ...s,
+      user: s.user ? { ...s.user, avatarUrl: undefined } : s.user,
     }));
   };
 
@@ -117,7 +150,12 @@ function Profile() {
     <>
       <main className="px-5 pb-32 pt-9">
         <header className="card flex flex-col items-center px-5 py-7">
-          <Avatar emoji={user.emoji} color={user.color} size={82} />
+          <Avatar
+            emoji={user.emoji}
+            color={user.color}
+            src={user.avatarUrl}
+            size={82}
+          />
           <h1 className="mt-3 text-[22px] font-extrabold tracking-[-0.02em]">
             {user.username}
           </h1>
@@ -195,15 +233,57 @@ function Profile() {
 
         <section className="mt-8">
           <h2 className="eyebrow">Avatar</h2>
-          <div className="mt-3 grid grid-cols-5 gap-2">
+
+          <div className="mt-3 flex items-center gap-4">
+            <Avatar
+              emoji={user.emoji}
+              color={user.color}
+              src={user.avatarUrl}
+              size={64}
+            />
+            <div className="flex-1">
+              <label className="btn-quiet block cursor-pointer px-4 py-2.5 text-center text-[12px]">
+                {busyPhoto
+                  ? "Memproses…"
+                  : user.avatarUrl
+                    ? "Ganti foto"
+                    : "Unggah foto"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  disabled={busyPhoto}
+                  onChange={onPhoto}
+                />
+              </label>
+              {user.avatarUrl && (
+                <button
+                  type="button"
+                  onClick={removePhoto}
+                  className="mt-2 w-full text-center text-[10.5px] text-muted"
+                >
+                  Hapus foto
+                </button>
+              )}
+            </div>
+          </div>
+
+          {photoError && (
+            <p role="alert" className="mt-2 text-[11px] text-danger">
+              {photoError}
+            </p>
+          )}
+
+          <p className="mt-4 text-[10.5px] text-muted">atau pilih emoji</p>
+          <div className="mt-2 grid grid-cols-5 gap-2">
             {EMOJIS.map((e) => (
               <button
                 key={e}
                 type="button"
                 onClick={() => pickEmoji(e)}
-                aria-pressed={user.emoji === e}
+                aria-pressed={!user.avatarUrl && user.emoji === e}
                 className={`grid h-11 place-items-center rounded-[12px] border text-[19px] transition ${
-                  user.emoji === e
+                  !user.avatarUrl && user.emoji === e
                     ? "border-flame/70 bg-flame/10"
                     : "border-line"
                 }`}

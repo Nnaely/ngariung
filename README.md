@@ -44,6 +44,7 @@ Aplikasi **mulai kosong**: tidak ada teman atau streak bawaan. `seed=1` hanya un
 
 - **Gerbang domain** `@polban.ac.id` — regex `^[^@\s]+@polban\.ac\.id$`, menolak `@polban.ac.id.evil.com`.
 - **Username unik** 3–20 karakter, bisa diganti kapan saja (cek ketersediaan live).
+- **Avatar custom**: pilih emoji atau unggah foto sendiri — dipotong bulat & dikompres di browser, tersimpan lokal.
 - **Geofence 200 m** dengan Haversine, akurasi GPS ≤ 100 m, tombol punya 9 state (mencari, di luar radius, GPS lemah, siap, mengirim, sukses, sudah absen, izin ditolak, error).
 - **Streak** harian ala TikTok/Duolingo: increment, putus, **freeze bulanan** (2 jatah/bulan, reset tanggal 1), milestone 3/7/14/30/50/100.
 - **Tampilan gelap hangat**: kartu kaca, satu aksen oranye, tanpa gradasi di background.
