@@ -146,3 +146,14 @@ export const LockIcon = ({ className }: IconProps) =>
     </>,
     className,
   );
+
+export const GamepadIcon = ({ className }: IconProps) =>
+  svg(
+    <>
+      <rect x="2" y="6" width="20" height="12" rx="6" />
+      <path d="M8 9v6M5 12h6" />
+      <circle cx="16" cy="11" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="18" cy="14" r="1.1" fill="currentColor" stroke="none" />
+    </>,
+    className,
+  );

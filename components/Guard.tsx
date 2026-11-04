@@ -38,6 +38,8 @@ export function Guard({ children }: { children: ReactNode }) {
       const username = as.toLowerCase().replace(/[^a-z0-9._]/g, "").slice(0, 20);
       if (username.length >= 3) {
         const seed = Math.max(0, Math.min(365, Number(params.get("streak") ?? 0) || 0));
+        const withCheckIn = params.get("checkin") === "1";
+        const today = todayWIB();
         update((s) =>
           s.user
             ? s
@@ -55,10 +57,24 @@ export function Guard({ children }: { children: ReactNode }) {
                         current: seed,
                         longest: seed + 3,
                         freezes: FREEZES_PER_MONTH,
-                        lastDate: shiftDate(todayWIB(), -1),
-                        freezeMonth: monthKey(todayWIB()),
+                        lastDate: shiftDate(today, -1),
+                        freezeMonth: monthKey(today),
                       }
                     : s.streak,
+                checkIns: withCheckIn
+                  ? [
+                      {
+                        id: `demo-${username}-${today}`,
+                        username,
+                        emoji: "🔥",
+                        color: "#FF5A1F",
+                        at: new Date().toISOString(),
+                        date: today,
+                        streak: Math.max(1, seed),
+                      },
+                      ...s.checkIns,
+                    ]
+                  : s.checkIns,
               },
         );
         return;

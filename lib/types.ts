@@ -27,3 +27,22 @@ export type Friend = {
   streak: number;
   minutesAgo: number;
 };
+
+export type BattleRecord = {
+  id: string;
+  date: string;
+  game: "ttt" | "rps";
+  playerA: string;
+  playerB: string;
+  winner: string;
+  at: string;
+};
+
+export type DailyRecord = {
+  date: string;
+  game: "kata" | "teka";
+  username: string;
+  solved: boolean;
+  score: number;
+  at: string;
+};

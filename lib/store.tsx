@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { CheckIn, User } from "./types";
+import type { BattleRecord, CheckIn, DailyRecord, User } from "./types";
 import type { StreakState } from "./streak";
 import { todayWIB } from "./format";
 import { seedCheckIns } from "./seed";
@@ -19,12 +19,16 @@ export type State = {
   user: User | null;
   streak: StreakState;
   checkIns: CheckIn[];
+  battles: BattleRecord[];
+  dailies: DailyRecord[];
 };
 
 export const EMPTY_STATE: State = {
   user: null,
   streak: { current: 0, longest: 0, freezes: 0, lastDate: null, freezeMonth: null },
   checkIns: [],
+  battles: [],
+  dailies: [],
 };
 
 function hydrate(raw: string | null): State {
@@ -41,6 +45,8 @@ function hydrate(raw: string | null): State {
         freezeMonth: parsed.streak?.freezeMonth ?? null,
       },
       checkIns: Array.isArray(parsed.checkIns) ? parsed.checkIns : [],
+      battles: Array.isArray(parsed.battles) ? parsed.battles : [],
+      dailies: Array.isArray(parsed.dailies) ? parsed.dailies : [],
     };
   } catch {
     return EMPTY_STATE;
