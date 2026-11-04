@@ -74,6 +74,20 @@ Kamu akan melihat kartu konfeti, angka streak baru, dan contoh notifikasi yang d
 
 Streak bertambah kalau kamu absen di hari berturut-turut. Kalau bolong sehari, kamu punya **2 freeze per bulan** yang otomatis menyelamatkan streak. Freeze kembali penuh setiap tanggal 1.
 
+Tingkatan api mengikuti streak:
+
+| Streak | Tingkatan |
+|---|---|
+| 0 | Api Kecil |
+| 10 | Api Menyala |
+| 30 | Api Panas |
+| 50 | Api Biru |
+| 70 | Api Ungu |
+| 100 | Api Putih |
+| 200 | Api Emas |
+| 300 | Api Zamrud |
+| 500 | Api Dewa |
+
 ---
 
 ## Di dalam aplikasi
