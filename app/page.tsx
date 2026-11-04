@@ -11,12 +11,13 @@ import {
   ArrowUpIcon,
   BellIcon,
   CheckIcon,
-  FlameIcon,
   LockIcon,
   MapPinIcon,
   SnowflakeIcon,
 } from "@/components/Icons";
 import { checkedInToday, todayCheckIns, useStore } from "@/lib/store";
+import { nextFlameTier } from "@/lib/flame";
+import { StreakFlame } from "@/components/StreakFlame";
 import {
   applyCheckIn,
   broadcastBody,
@@ -145,6 +146,7 @@ function Home() {
 
   const streak = state.streak;
   const freezes = effectiveFreezes(streak, today);
+  const nextTier = nextFlameTier(streak.current);
 
   const buttonState: "submitting" | "done" | "locked" | "ready" = submitting
     ? "submitting"
@@ -361,9 +363,7 @@ function Home() {
               </div>
             </div>
             <div className="flex flex-col items-end gap-2">
-              <span className="flicker text-[34px]" aria-hidden="true">
-                🔥
-              </span>
+              <StreakFlame streak={streak.current} size={34} />
               <div className="flex gap-1.5" aria-label="Sisa freeze bulan ini">
                 {[0, 1].map((i) => (
                   <SnowflakeIcon
@@ -375,6 +375,13 @@ function Home() {
                 ))}
               </div>
             </div>
+          </div>
+
+          <div className="mt-4 flex items-center justify-between rounded-[12px] border border-line px-3 py-2">
+            <StreakFlame streak={streak.current} size={14} withLabel />
+            <span className="text-[10px] text-muted">
+              {nextTier ? `naik di ${nextTier.min} hari` : "tingkat tertinggi"}
+            </span>
           </div>
 
           <div className="mt-4 flex items-center justify-between border-t border-white/[0.06] pt-3 text-[11px]">
@@ -459,8 +466,8 @@ function Home() {
           <Confetti count={28} />
           <div className="rise w-full max-w-[330px] rounded-[22px] border border-line bg-panel p-6">
             <div className="flex items-center gap-3">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-flame/12 text-flame">
-                <FlameIcon className="h-4 w-4" />
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-flame/12">
+                <StreakFlame streak={success.streak} size={16} />
               </span>
               <p className="eyebrow">Absen berhasil</p>
             </div>

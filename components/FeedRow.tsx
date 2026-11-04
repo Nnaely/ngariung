@@ -1,6 +1,6 @@
 import type { CheckIn } from "@/lib/types";
 import { Avatar } from "./Avatar";
-import { FlameIcon } from "./Icons";
+import { StreakFlame } from "./StreakFlame";
 import { relativeTime, timeWIB } from "@/lib/format";
 
 export function FeedRow({ item, isMe }: { item: CheckIn; isMe?: boolean }) {
@@ -26,7 +26,7 @@ export function FeedRow({ item, isMe }: { item: CheckIn; isMe?: boolean }) {
         </p>
       </div>
       <span className="tabular flex items-center gap-1 text-[12px] font-medium text-fg/80">
-        <FlameIcon className="h-3 w-3 text-flame/80" />
+        <StreakFlame streak={item.streak} size={12} />
         {item.streak}
       </span>
     </div>

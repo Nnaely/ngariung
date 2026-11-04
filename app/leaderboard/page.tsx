@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Guard } from "@/components/Guard";
 import { BottomNav } from "@/components/BottomNav";
 import { Avatar } from "@/components/Avatar";
-import { FlameIcon } from "@/components/Icons";
+import { StreakFlame } from "@/components/StreakFlame";
 import { useStore } from "@/lib/store";
 import { todayWIB } from "@/lib/format";
 
@@ -143,9 +143,7 @@ function Leaderboard() {
                 )}
               </p>
               <span className="tabular flex items-center gap-1.5 text-[13px] font-semibold">
-                <FlameIcon
-                  className={`h-3.5 w-3.5 ${i === 0 ? "text-flame" : "text-muted/60"}`}
-                />
+                <StreakFlame streak={value(e)} size={13} />
                 {value(e)}
               </span>
             </div>

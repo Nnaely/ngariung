@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { Guard } from "@/components/Guard";
 import { BottomNav } from "@/components/BottomNav";
 import { Avatar } from "@/components/Avatar";
+import { StreakFlame } from "@/components/StreakFlame";
 import {
   BellIcon,
   CheckIcon,
-  FlameIcon,
   RotateIcon,
   SnowflakeIcon,
 } from "@/components/Icons";
@@ -161,7 +161,7 @@ function Profile() {
           </h1>
           <p className="text-[11.5px] text-muted">{user.email}</p>
           <div className="mt-4 flex items-center gap-1.5 rounded-full bg-flame/12 px-3 py-1.5 text-[11.5px] font-bold text-flame">
-            <FlameIcon className="h-3.5 w-3.5" />
+            <StreakFlame streak={state.streak.current} size={14} />
             {state.streak.current} hari berturut-turut
           </div>
         </header>
@@ -340,7 +340,7 @@ function Profile() {
         </section>
 
         <p className="mt-8 flex items-center justify-center gap-1.5 text-[9.5px] text-muted/50">
-          <FlameIcon className="h-3 w-3" />
+          <span className="text-[10px]">??</span>
           Ngariung v0.2 · data lokal
         </p>
       </main>
