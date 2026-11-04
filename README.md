@@ -31,6 +31,9 @@ Semua mahasiswa yang punya email aktif **@polban.ac.id**. Email lain (Gmail, Yah
 | Notifikasi | Teman dapat kabar tiap kamu absen |
 | Feed hari ini | Daftar siapa saja yang sudah absen hari ini |
 | Papan peringkat | Urutan streak dan total absen 7 hari terakhir |
+| Battle minigame | Tic-Tac-Toe & Batu Gunting Kertas, terbuka setelah absen |
+| Game harian | Tebak Kata & Teka-teki, satu soal per hari |
+| Peringkat game | Rank battle dan rank harian terpisah |
 | Username | Bisa diganti kapan saja |
 | Avatar | Pilih emoji atau unggah fotomu sendiri |
 
@@ -83,9 +86,44 @@ Streak bertambah kalau kamu absen di hari berturut-turut. Kalau bolong sehari, k
 
 ![Peringkat](shots/07-rank-crop.png)
 
+**Main** — mabar bareng teman yang sedang di Pancong, plus teka-teki harian.
+
+![Main](shots/10-main-battle-crop.png)
+
 **Profil** — statistik, ganti username, ganti avatar (emoji atau foto), dan pengaturan notifikasi.
 
 ![Profil](shots/08-profile-crop.png)
+
+---
+
+## Main: mabar di Pancong
+
+Menu **Main** isinya dua hal: battle bareng teman dan permainan harian.
+
+### Battle (2 pemain, 1 HP)
+
+Battle cuma terbuka kalau kamu **sudah absen hari ini** — memang dibuat untuk dimainkan saat kalian benar-benar sedang nongkrong di Pancong. Caranya:
+
+1. Buka **Main**, pilih game: **Tic-Tac-Toe** atau **Batu Gunting Kertas**.
+2. Isi nama lawan (atau pilih dari daftar teman yang sudah absen hari ini).
+3. Main bergantian di satu HP. Pemain pertama jadi **X**, lawan jadi **O**.
+4. Pemenang otomatis masuk ke **Rank battle**.
+
+### Game harian (1 soal per hari)
+
+- **Tebak Kata** — tebak kata 5 huruf dalam 6 kesempatan. Warna hijau berarti huruf dan posisinya benar, kuning berarti hurufnya ada tapi posisinya salah.
+- **Teka-teki** — satu teka-teki logika per hari, maksimal 3 percobaan.
+
+Soal berganti setiap hari dan hanya bisa dimainkan sekali. Jawaban benar menambah poin di **Rank harian**.
+
+### Peringkat game
+
+Di halaman Main ada dua papan terpisah:
+
+- **Rank battle** — jumlah kemenangan battle.
+- **Rank harian** — total teka-teki yang berhasil dijawab.
+
+Game berikutnya yang sedang disiapkan: Catur, Tebak Gambar, Sambung Kata, Uno, dan Ludo.
 
 ---
 
