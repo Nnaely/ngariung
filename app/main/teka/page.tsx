@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { Guard } from "@/components/Guard";
 import { BottomNav } from "@/components/BottomNav";
@@ -28,12 +28,17 @@ function Teka() {
   const [value, setValue] = useState("");
   const [tries, setTries] = useState(0);
   const [wrong, setWrong] = useState(false);
-  const [done, setDone] = useState(false);
+  const [outcome, setOutcome] = useState<boolean | null>(null);
+  const saving = useRef(false);
 
   const answerKey = teka.a.map(normalize);
+  const solved = played ? played.solved : outcome === true;
+  const finished = !!played || outcome !== null;
 
-  const finish = (solved: boolean) => {
-    setDone(true);
+  const finish = (isCorrect: boolean) => {
+    if (saving.current) return;
+    saving.current = true;
+    setOutcome(isCorrect);
     update((s) => ({
       ...s,
       dailies: [
@@ -42,8 +47,8 @@ function Teka() {
           date: today,
           game: "teka",
           username: user.username,
-          solved,
-          score: solved ? 1 : 0,
+          solved: isCorrect,
+          score: isCorrect ? 1 : 0,
           at: new Date().toISOString(),
         },
       ],
@@ -51,13 +56,15 @@ function Teka() {
   };
 
   const submit = () => {
-    if (done || played) return;
-    if (!value.trim()) return;
+    if (finished) return;
     const guess = normalize(value);
+    if (!guess) return;
+
     if (answerKey.includes(guess)) {
       finish(true);
       return;
     }
+
     const next = tries + 1;
     setTries(next);
     setWrong(true);
@@ -81,18 +88,36 @@ function Teka() {
         <div className="card mt-6 p-5">
           <p className="text-[14px] leading-relaxed">{teka.q}</p>
 
-          {played || done ? (
+          {finished ? (
             <div className="mt-5 border-t border-line pt-4">
-              <p className="text-[11px] uppercase tracking-[0.16em] text-muted">
-                {played ? "Hasil hari ini" : "Selesai"}
+              <div className="flex items-center gap-2">
+                <span
+                  className={`grid h-6 w-6 place-items-center rounded-full text-[11px] ${
+                    solved
+                      ? "bg-mint/15 text-mint"
+                      : "bg-danger/15 text-danger"
+                  }`}
+                >
+                  {solved ? "✓" : "×"}
+                </span>
+                <p className="text-[12.5px] font-semibold">
+                  {solved ? "Jawabanmu benar" : "Jawabanmu belum tepat"}
+                </p>
+              </div>
+
+              <p className="mt-3 text-[12px] text-muted">
+                Jawaban resmi: <b className="text-fg">{teka.a[0]}</b>
               </p>
-              <p className="mt-2 text-[13px]">
-                Jawaban: <b>{teka.a[0]}</b>
-              </p>
-              <p className="mt-1 text-[11.5px] text-muted">
-                {(played?.solved ?? done) ? "Kamu menjawab benar 🎉" : "Belum tepat, coba lagi besok"}
-              </p>
-              <Link href="/main" className="btn-quiet mt-4 block py-2.5 text-center text-[12px]">
+              {!solved && tries > 0 && (
+                <p className="mt-1 text-[11px] text-muted">
+                  Kamu mencoba {tries} kali.
+                </p>
+              )}
+
+              <Link
+                href="/main"
+                className="btn-quiet mt-4 block py-2.5 text-center text-[12px]"
+              >
                 Kembali ke Main
               </Link>
             </div>
@@ -106,6 +131,7 @@ function Teka() {
                 }}
                 onKeyDown={(e) => e.key === "Enter" && submit()}
                 placeholder="jawabanmu…"
+                maxLength={40}
                 className="field w-full px-4 py-3 text-[13.5px] outline-none placeholder:text-muted/60"
               />
               {wrong && (

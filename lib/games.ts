@@ -56,7 +56,7 @@ export type Teka = { q: string; a: string[] };
 export const TEKA_LIST: Teka[] = [
   {
     q: "Ibu punya empat anak: Januari, Februari, Maret. Siapa nama anak keempat?",
-    a: ["ibu", "ibunya"],
+    a: ["ibu"],
   },
   {
     q: "Semakin banyak diambil, semakin besar. Apa itu?",
@@ -64,11 +64,11 @@ export const TEKA_LIST: Teka[] = [
   },
   {
     q: "Punya banyak gigi tapi tidak bisa menggigit. Apa?",
-    a: ["sisir", "garpu"],
+    a: ["sisir"],
   },
   {
     q: "Selalu ada di depanmu, tapi tidak pernah bisa kamu lihat. Apa?",
-    a: ["masadepan", "depan"],
+    a: ["masadepan"],
   },
   {
     q: "Berapa banyak bulan dalam setahun yang punya 28 hari?",
@@ -76,7 +76,7 @@ export const TEKA_LIST: Teka[] = [
   },
   {
     q: "Bisa dipegang tapi tidak bisa dilihat, bisa habis tanpa dipakai. Apa?",
-    a: ["waktu", "napas"],
+    a: ["waktu"],
   },
   {
     q: "Makin besar, makin sulit dibawa. Apa?",
