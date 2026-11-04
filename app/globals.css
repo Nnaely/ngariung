@@ -1,0 +1,248 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Ngariung — gelap hangat, kartu kaca, satu aksen api.
+   ============================================================ */
+:root {
+  color-scheme: dark;
+
+  --c-bg: #0b0912;
+  --c-bg-2: #100d18;
+  --c-panel: rgba(255, 255, 255, 0.045);
+  --c-card: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.072),
+    rgba(255, 255, 255, 0.028)
+  );
+  --c-line: rgba(255, 255, 255, 0.09);
+  --c-fg: #f7f4ff;
+  --c-muted: #a29cb8;
+  --c-accent: #ff6b3d;
+  --c-accent-2: #ffb43d;
+  --c-accent-ink: #1a0a04;
+  --c-mint: #35e0ac;
+  --c-ice: #8bd8ff;
+  --c-danger: #ff7a8a;
+  --c-nav: rgba(13, 10, 20, 0.9);
+}
+
+@theme {
+  --color-bg: var(--c-bg);
+  --color-bg2: var(--c-bg-2);
+  --color-panel: var(--c-panel);
+  --color-line: var(--c-line);
+  --color-fg: var(--c-fg);
+  --color-muted: var(--c-muted);
+  --color-flame: var(--c-accent);
+  --color-amber: var(--c-accent-2);
+  --color-accent-ink: var(--c-accent-ink);
+  --color-mint: var(--c-mint);
+  --color-ice: var(--c-ice);
+  --color-danger: var(--c-danger);
+  --color-nav: var(--c-nav);
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+}
+
+/* ============================================================
+   Dasar
+   ============================================================ */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  min-height: 100dvh;
+  background-color: var(--c-bg);
+  color: var(--c-fg);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  background-image: radial-gradient(
+    900px 520px at 50% -12%,
+    rgba(255, 255, 255, 0.045),
+    transparent 62%
+  );
+  background-repeat: no-repeat;
+}
+
+::selection {
+  background: rgba(255, 107, 61, 0.35);
+}
+
+/* ============================================================
+   Komponen
+   ============================================================ */
+.card {
+  background: var(--c-card);
+  border: 1px solid var(--c-line);
+  border-radius: 26px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+.flame-text {
+  background: linear-gradient(115deg, var(--c-accent) 0%, var(--c-accent-2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.field {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--c-line);
+  border-radius: 18px;
+}
+
+.field:focus-within {
+  border-color: rgba(255, 107, 61, 0.55);
+}
+
+.btn-accent {
+  background: linear-gradient(140deg, var(--c-accent) 0%, var(--c-accent-2) 100%);
+  color: var(--c-accent-ink);
+  border-radius: 16px;
+  font-weight: 800;
+  box-shadow: 0 16px 40px -20px rgba(255, 107, 61, 0.8);
+}
+
+.btn-accent:active {
+  transform: scale(0.985);
+}
+
+.btn-quiet {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--c-line);
+  color: var(--c-fg);
+  border-radius: 16px;
+  font-weight: 700;
+}
+
+.flame-bg {
+  background: linear-gradient(140deg, var(--c-accent) 0%, var(--c-accent-2) 100%);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ============================================================
+   Animasi
+   ============================================================ */
+@keyframes flicker {
+  0%,
+  100% {
+    transform: scale(1) rotate(-1.5deg);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.07) rotate(1.5deg);
+    filter: brightness(1.16);
+  }
+}
+
+.flicker {
+  display: inline-block;
+  animation: flicker 2.6s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.015);
+  }
+}
+
+.breathe {
+  animation: breathe 3.2s ease-in-out infinite;
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(22px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.rise {
+  animation: rise 0.36s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.28s ease both;
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translate3d(0, -8vh, 0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--dx), 84vh, 0) rotate(var(--rot));
+    opacity: 0;
+  }
+}
+
+.confetti-piece {
+  position: fixed;
+  top: 0;
+  border-radius: 2px;
+  pointer-events: none;
+  animation: confettiFall var(--dur) cubic-bezier(0.15, 0.6, 0.45, 1) forwards;
+  animation-delay: var(--delay);
+  z-index: 80;
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  animation: spinner 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flicker,
+  .breathe,
+  .confetti-piece,
+  .rise {
+    animation: none !important;
+  }
+}
