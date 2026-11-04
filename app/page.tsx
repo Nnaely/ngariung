@@ -25,11 +25,11 @@ import {
 } from "@/lib/streak";
 import {
   ACCURACY_MAX_M,
-  MANCONG,
+  PANCONG,
   RADIUS_M,
-  bearingToMancong,
+  bearingToPancong,
   cardinalDirection,
-  distanceToMancong,
+  distanceToPancong,
   formatDistance,
 } from "@/lib/geo";
 import {
@@ -84,8 +84,8 @@ function Home() {
 
     if (demo === "in") {
       setCoords({
-        lat: MANCONG.lat + 0.00055,
-        lng: MANCONG.lng - 0.00035,
+        lat: PANCONG.lat + 0.00055,
+        lng: PANCONG.lng - 0.00035,
         accuracy: 16,
       });
       setPhase("ready");
@@ -136,8 +136,8 @@ function Home() {
     });
   }, [user.username]);
 
-  const dist = coords ? distanceToMancong(coords.lat, coords.lng) : null;
-  const bearing = coords ? bearingToMancong(coords.lat, coords.lng) : 0;
+  const dist = coords ? distanceToPancong(coords.lat, coords.lng) : null;
+  const bearing = coords ? bearingToPancong(coords.lat, coords.lng) : 0;
   const inRange = dist !== null && dist <= RADIUS_M;
   const accuracyOk = coords ? coords.accuracy <= ACCURACY_MAX_M : false;
   const canCheckIn =
@@ -168,7 +168,7 @@ function Home() {
   else if (!accuracyOk)
     statusText = `GPS kurang akurat (±${Math.round(coords!.accuracy)} m). Coba di area terbuka.`;
   else if (!inRange)
-    statusText = `${formatDistance(dist)} dari Mancong · arah ${cardinalDirection(bearing)}`;
+    statusText = `${formatDistance(dist)} dari Pancong · arah ${cardinalDirection(bearing)}`;
   else statusText = `${formatDistance(dist)} dari titik absen`;
 
   const handleCheckIn = () => {
@@ -244,7 +244,7 @@ function Home() {
                   : phase === "unsupported" || phase === "error"
                     ? "Lokasi tidak tersedia"
                     : inRange
-                      ? "Kamu di area Mancong"
+                      ? "Kamu di area Pancong"
                       : "Di luar jangkauan"}
             </p>
             <p className="truncate text-[10.5px] text-muted">
@@ -391,7 +391,7 @@ function Home() {
         {/* yang sudah absen */}
         <section className="mt-7">
           <div className="flex items-center justify-between">
-            <h2 className="text-[13px] font-bold">Sudah di Mancong</h2>
+            <h2 className="text-[13px] font-bold">Sudah di Pancong</h2>
             <Link href="/feed" className="text-[11px] text-muted">
               Lihat semua
             </Link>

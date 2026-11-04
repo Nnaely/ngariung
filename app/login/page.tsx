@@ -7,7 +7,7 @@ import { Avatar } from "@/components/Avatar";
 
 const EMAIL_RE = /^[^@\s]+@polban\.ac\.id$/i;
 const USERNAME_RE = /^[a-z0-9](?:[a-z0-9._]{1,18})[a-z0-9]$/;
-const RESERVED = ["admin", "ngariung", "polban", "mancong", "root", "support"];
+const RESERVED = ["admin", "ngariung", "polban", "pancong", "root", "support"];
 
 const EMOJIS = ["🔥", "😎", "🌻", "🐧", "🍓", "⚡", "🐱", "🎧", "🍊", "🌙"];
 const COLORS = [

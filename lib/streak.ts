@@ -98,7 +98,7 @@ export function applyCheckIn(s: StreakState, today: string): CheckInResult {
 
 /** Notifikasi yang dikirim ke pengguna lain — teks dikunci oleh PRD R5. */
 export function broadcastBody(username: string): string {
-  return `${username} sudah absen hari ini, ayo segera menuju Mancong skrg!`;
+  return `${username} sudah absen hari ini, ayo segera menuju Pancong skrg!`;
 }
 
 export function broadcastTitle(username: string): string {
