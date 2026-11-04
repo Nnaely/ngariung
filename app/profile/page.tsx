@@ -129,7 +129,7 @@ function Profile() {
     setPermission(result);
     if (result === "granted") {
       new Notification("Ngariung aktif", {
-        body: "Kamu akan dapat kabar saat temanmu absen di Pancong.",
+        body: "Kamu akan dapat kabar saat temanmu absen di Mancong.",
         icon: "/icons/icon-192.png",
       });
     }

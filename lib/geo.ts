@@ -1,5 +1,5 @@
 /** Titik & aturan geofence — satu sumber kebenaran. */
-export const PANCONG = {
+export const MANCONG = {
   lat: -6.874474372696532,
   lng: 107.57563823965597,
 } as const;
@@ -23,15 +23,15 @@ export function haversineMeters(a: LatLng, b: LatLng): number {
   return 2 * EARTH_R * Math.asin(Math.min(1, Math.sqrt(s)));
 }
 
-export function distanceToPancong(lat: number, lng: number): number {
-  return haversineMeters({ lat, lng }, PANCONG);
+export function distanceToMancong(lat: number, lng: number): number {
+  return haversineMeters({ lat, lng }, MANCONG);
 }
 
-/** Arah dari titik pengguna menuju Pancong (derajat, 0 = utara). */
-export function bearingToPancong(lat: number, lng: number): number {
+/** Arah dari titik pengguna menuju Mancong (derajat, 0 = utara). */
+export function bearingToMancong(lat: number, lng: number): number {
   const φ1 = toRad(lat);
-  const φ2 = toRad(PANCONG.lat);
-  const Δλ = toRad(PANCONG.lng - lng);
+  const φ2 = toRad(MANCONG.lat);
+  const Δλ = toRad(MANCONG.lng - lng);
   const y = Math.sin(Δλ) * Math.cos(φ2);
   const x =
     Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);

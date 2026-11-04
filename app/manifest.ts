@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Ngariung — Absen Nongkrong Polban",
     short_name: "Ngariung",
     description:
-      "Absen harian di Pancong, kumpulkan streak, dan bikin temanmu FOMO.",
+      "Absen harian di Mancong, kumpulkan streak, dan bikin temanmu FOMO.",
     start_url: "/?src=pwa",
     scope: "/",
     display: "standalone",

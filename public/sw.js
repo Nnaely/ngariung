@@ -45,7 +45,7 @@ self.addEventListener("push", (event) => {
     data = { body: event.data ? event.data.text() : "" };
   }
 
-  const title = data.title || "🔥 Ada yang baru di Pancong!";
+  const title = data.title || "🔥 Ada yang baru di Mancong!";
   event.waitUntil(
     self.registration.showNotification(title, {
       body: data.body || "",
