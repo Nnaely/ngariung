@@ -1,133 +1,131 @@
 # Ngariung 🔥
 
-**Absen dulu, baru nongkrong.** Aplikasi absen harian + streak untuk mahasiswa Politeknik Negeri Bandung. Tombol absen cuma hidup kalau kamu benar-benar berada dalam **200 meter** dari Pancong.
+**Absen dulu, baru nongkrong.**
 
-Status: **demo PWA yang sudah jalan** (data di browser). Jalur ke produksi (Supabase + push) ada di [`supabase/schema.sql`](supabase/schema.sql) dan roadmap di bawah.
+Ngariung adalah aplikasi absen harian buat mahasiswa Politeknik Negeri Bandung. Bukan absensi kuliah — ini pencatat siapa yang sudah nongkrong di **Pancong** hari ini. Absen cuma bisa dilakukan kalau kamu benar-benar ada di sana, dalam radius **200 meter**. Setiap absen menambah streak, dan teman-temanmu langsung dapat kabar.
 
 ![Home](shots/02-home-crop.png)
 
 ---
 
-## Jalankan
+## Kenapa pakai Ngariung
 
-```bash
-pnpm install
-pnpm dev          # http://localhost:3000
-```
+- **Absennya jujur.** Tombol absen cuma hidup kalau GPS-mu menunjukkan kamu ada di area Pancong. Nggak bisa diabsen dari rumah.
+- **Ada rekor yang bikin nagih.** Streak harian, rekor terbaik, dan papan peringkat bikin datang tiap hari jadi punya alasan.
+- **Teman langsung tahu.** Begitu kamu absen, semua teman yang belum absen dapat notifikasi: *"kamu sudah absen hari ini, ayo segera menuju Pancong skrg!"*
+- **Khusus warga Polban.** Cuma bisa masuk pakai email kampus `@polban.ac.id`, jadi isinya benar-benar lingkaranmu.
 
-Butuh Node 18.18+ (disarankan 20+).
+## Siapa yang bisa pakai
 
-### Build produksi
+Semua mahasiswa yang punya email aktif **@polban.ac.id**. Email lain (Gmail, Yahoo, dsb.) akan ditolak saat mendaftar.
 
-```bash
-pnpm build
-pnpm start
-```
+---
 
-### URL demo (tanpa lewat login)
+## Fitur
 
-| URL | Efek |
+| Fitur | Penjelasan |
 |---|---|
-| `/login` | Halaman masuk (validasi domain) |
-| `/?as=rizky&demo=in&streak=12` | Langsung masuk, posisi 72 m dari Pancong, streak 12 |
-| `/?as=rizky&demo=out&streak=12` | Posisi 2,6 km → tombol terkunci |
-| `/?as=rizky&demo=win` | Pratinjau kartu "absen berhasil" |
-| `/?as=rizky&lat=-6.8745&lng=107.5756` | Paksa koordinat sendiri (uji geofence) |
-| `/?as=rizky&seed=1` | Isi 7 teman contoh (khusus pratinjau) |
-
-Aplikasi **mulai kosong**: tidak ada teman atau streak bawaan. `seed=1` hanya untuk screenshot/presentasi.
-`demo=in/out` juga hanya pratinjau. Tanpa parameter itu, aplikasi memakai GPS asli lewat `navigator.geolocation.watchPosition`.
-
----
-
-## Yang sudah jadi
-
-- **Gerbang domain** `@polban.ac.id` — regex `^[^@\s]+@polban\.ac\.id$`, menolak `@polban.ac.id.evil.com`.
-- **Username unik** 3–20 karakter, bisa diganti kapan saja (cek ketersediaan live).
-- **Avatar custom**: pilih emoji atau unggah foto sendiri — dipotong bulat & dikompres di browser, tersimpan lokal.
-- **Geofence 200 m** dengan Haversine, akurasi GPS ≤ 100 m, tombol punya 9 state (mencari, di luar radius, GPS lemah, siap, mengirim, sukses, sudah absen, izin ditolak, error).
-- **Streak** harian ala TikTok/Duolingo: increment, putus, **freeze bulanan** (2 jatah/bulan, reset tanggal 1), milestone 3/7/14/30/50/100.
-- **Tampilan gelap hangat**: kartu kaca, satu aksen oranye, tanpa gradasi di background.
-- **Absen 1× per hari** (kalender Asia/Jakarta), idempoten.
-- **Feed hari ini** + **leaderboard** (streak & 7 hari).
-- **Notifikasi**: template persis `"{username} sudah absen hari ini, ayo segera menuju Pancong skrg!"` + service worker `push` handler.
-- **PWA**: manifest, ikon maskable, service worker, installable di Android & iOS.
-
-## Yang belum (jalur produksi)
-
-Demo ini menyimpan state di `localStorage` dan mulai tanpa data. Untuk produksi:
-
-1. **Supabase** — import `supabase/schema.sql` (RLS + trigger domain sudah disiapkan).
-2. **Google OAuth** — `polban.ac.id` memakai Google Workspace, jadi email kampus sudah terverifikasi Google. Gratis, tanpa kirim OTP.
-3. **Validasi server** — pindahkan `lib/geo.ts` & `lib/streak.ts` ke Route Handler; client tidak boleh dipercaya.
-4. **Web Push** — `npx web-push generate-vapid-keys`, simpan subscription, fan-out dengan batching 15 menit.
-5. **Keep-alive** — cron harian ke `/api/health` supaya Supabase free tidak di-pause.
+| Absen lokasi | Tombol aktif hanya dalam radius 200 m dari titik Pancong |
+| Streak harian | Hitungan hari berturut-turut, lengkap dengan rekor terbaik |
+| Streak freeze | 2 jatah penyelamat per bulan, reset tanggal 1 |
+| Notifikasi | Teman dapat kabar tiap kamu absen |
+| Feed hari ini | Daftar siapa saja yang sudah absen hari ini |
+| Papan peringkat | Urutan streak dan total absen 7 hari terakhir |
+| Username | Bisa diganti kapan saja |
+| Avatar | Pilih emoji atau unggah fotomu sendiri |
 
 ---
 
-## Struktur
+## Cara pakai
 
-```
-app/
-  page.tsx            Home: geofence + tombol absen + streak
-  login/page.tsx      Gerbang domain + pilih username
-  feed/page.tsx       Kehadiran hari ini
-  leaderboard/page.tsx
-  profile/page.tsx    Statistik, ganti username, avatar
-  manifest.ts         Manifest PWA
-  globals.css         Token warna, animasi, konfeti
-components/           Guard, BottomNav, Avatar, FeedRow, Confetti, Icons
-lib/
-  geo.ts              Haversine, bearing, konstanta Pancong
-  streak.ts           Aturan streak murni + template notifikasi
-  store.tsx           State + localStorage (pengganti Supabase)
-  seed.ts             7 teman demo
-supabase/schema.sql   Skema produksi (RLS, trigger, view)
-shots/                Screenshot
-```
+### 1. Pasang di HP
 
-## Konstanta penting
+Buka alamat Ngariung di browser HP.
 
-```ts
-PANCONG   = { lat: -6.874474372696532, lng: 107.57563823965597 }
-RADIUS_M  = 200
-ACCURACY_MAX_M = 100
-```
+- **Android (Chrome):** tekan menu **⋮** → **Install app** / **Tambahkan ke layar utama**
+- **iPhone (Safari):** tekan **Share** → **Add to Home Screen**
 
-Ubah di [`lib/geo.ts`](lib/geo.ts) — satu sumber kebenaran.
+Setelah terpasang, Ngariung muncul di layar utama seperti aplikasi biasa — tanpa address bar.
+
+### 2. Masuk dengan email kampus
+
+Masukkan email `@polban.ac.id`. Sistem akan menolak domain lain.
+
+![Masuk](shots/01-login-crop.png)
+
+### 3. Pilih username dan avatar
+
+Username 3–20 karakter (huruf kecil, angka, titik, underscore) dan harus unik. Pilih emoji dulu — foto bisa diunggah nanti di Profil.
+
+### 4. Izinkan akses lokasi
+
+Saat pertama membuka Home, browser minta izin lokasi. **Pilih Izinkan.** Tanpa izin ini tombol absen tidak akan pernah aktif.
+
+### 5. Tekan ABSEN
+
+Berdirilah di area Pancong. Kalau posisimu sudah masuk radius, tombol berubah oranye menyala dan tulisan di bawahnya menunjukkan jarakmu. Tekan sekali — selesai.
+
+Kamu akan melihat kartu konfeti, angka streak baru, dan contoh notifikasi yang dikirim ke teman-temanmu.
+
+### 6. Jaga streak
+
+Streak bertambah kalau kamu absen di hari berturut-turut. Kalau bolong sehari, kamu punya **2 freeze per bulan** yang otomatis menyelamatkan streak. Freeze kembali penuh setiap tanggal 1.
 
 ---
 
-## Pasang di HP (PWA)
+## Di dalam aplikasi
 
-**Android (Chrome):** buka URL → menu ⋮ → **Install app** / **Tambahkan ke layar utama**.
-**iPhone (Safari):** buka URL → tombol **Share** → **Add to Home Screen**.
+**Home** — status lokasi, tombol absen, kartu streak, dan siapa yang sudah absen hari ini.
 
-Syaratnya cuma **HTTPS**. Setelah dipasang, aplikasi terbuka fullscreen tanpa address bar dan tetap bisa dibuka offline (shell di-cache service worker; data tersimpan di perangkat).
+**Feed** — daftar lengkap kehadiran hari ini, urut dari yang paling baru.
 
-### Cara cepat: tunnel sementara (dari laptop ini)
+**Peringkat** — dua papan: streak saat ini dan total absen 7 hari terakhir.
 
-```bash
-node scripts/prod-server.cjs          # server di :3101
-./cloudflared.exe tunnel --url http://127.0.0.1:3101 --no-autoupdate
-```
+![Peringkat](shots/07-rank-crop.png)
 
-Cloudflared mencetak URL `https://xxxx.trycloudflare.com` — buka di HP lalu install.
-URL ini **sementara**: hidup selama laptop & proses cloudflared menyala. Untuk permanen, pakai Vercel di bawah (3 menit, gratis).
+**Profil** — statistik, ganti username, ganti avatar (emoji atau foto), dan pengaturan notifikasi.
 
-## Deploy permanen gratis (Rp 0)
+![Profil](shots/08-profile-crop.png)
 
-1. Push repo ke GitHub.
-2. Buka [vercel.com/new](https://vercel.com/new) → import repo.
-3. Framework terdeteksi otomatis (Next.js). Klik **Deploy**.
-4. Buka `https://<project>.vercel.app` di HP → **Install app**.
+---
 
-Tanpa domain kustom, tanpa kartu kredit, tanpa biaya bulanan.
+## Pertanyaan yang sering muncul
 
-### Keep-alive Supabase (kalau nanti disambungkan)
+**Tombol ABSEN saya terkunci, kenapa?**
+Bisa jadi salah satu dari ini: kamu masih di luar radius 200 m, GPS kurang akurat (coba di area terbuka), izin lokasi dimatikan, atau kamu sudah absen hari ini. Alasan pastinya selalu tertulis di bawah tombol.
 
-Supabase free di-pause setelah 7 hari idle. Tambahkan cron GitHub Actions harian yang memanggil `GET /api/health` (lihat PRD bagian 8.5).
+**Bisa absen dari rumah?**
+Tidak. Titik absen sudah dikunci di koordinat Pancong, dan sistem memeriksa ulang lokasimu.
+
+**Streak saya hilang, padahal rajin.**
+Streak putus kalau kamu melewatkan satu hari penuh tanpa absen dan tanpa sisa freeze. Freeze hanya 2 per bulan dan tidak menumpuk.
+
+**Kapan freeze di-reset?**
+Tanggal 1 setiap bulan, pukul 00.00 WIB. Sisa freeze bulan lalu tidak terbawa.
+
+**Kenapa email saya ditolak?**
+Ngariung hanya menerima email `@polban.ac.id`. Pastikan tidak ada salah ketik atau memakai email pribadi.
+
+**Username bisa diganti?**
+Bisa, kapan saja, lewat Profil. Username lama langsung hilang dari feed.
+
+**Apakah data saya aman?**
+Lokasi hanya dipakai untuk memeriksa jarak saat absen dan tidak pernah ditampilkan ke pengguna lain. Data saat ini tersimpan di perangkatmu sendiri.
+
+**Apakah bisa dipakai tanpa internet?**
+Aplikasi tetap terbuka, tapi absen butuh koneksi untuk mengirim dan menerima kabar teman.
+
+---
+
+## Privasi
+
+- Koordinat lokasimu **tidak pernah** ditampilkan ke pengguna lain.
+- Yang terlihat oleh teman hanya status "sudah absen" beserta jamnya.
+- Foto avatar dan data profil disimpan di perangkatmu.
+- Tidak ada iklan dan tidak ada penjualan data.
+
+---
 
 ## Lisensi
 
-MIT — pakai, ubah, sebarkan.
+MIT — silakan dipakai dan dikembangkan.
