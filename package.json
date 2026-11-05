@@ -7,19 +7,26 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "node --test scripts/*.test.mjs"
+    "test": "node --test scripts/*.test.mjs",
+    "db:dev": "node scripts/dev-db.mjs"
   },
   "dependencies": {
     "next": "^15.5.0",
+    "pg": "^8.23.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "styled-jsx": "^5.1.6"
+    "styled-jsx": "^5.1.6",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.15",
+    "@electric-sql/pglite-socket": "^0.2.18",
     "@tailwindcss/postcss": "^4.1.0",
     "@types/node": "^22.10.0",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/web-push": "^3.6.4",
     "tailwindcss": "^4.1.0",
     "typescript": "^5.7.0"
   }

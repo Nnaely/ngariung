@@ -10,8 +10,14 @@ Thumbs.db
 *.tsbuildinfo
 next-env.d.ts
 
+# database lokal (pnpm db:dev)
+.data/
+
 # binari besar
 cloudflared.exe
+
+# profil browser bekas pengambilan screenshot
+shots/profile/
 
 # screenshot mentah, simpan versi crop saja
 shots/*.png
