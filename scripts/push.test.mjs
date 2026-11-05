@@ -115,6 +115,25 @@ test("invalid subscriptions are refused", async () => {
   });
 });
 
+test("subscriptions must point at a real browser push service, not an arbitrary server", async () => {
+  await withDb(async (db) => {
+    const ayu = await person(db, "ayu");
+    for (const endpoint of [
+      "https://evil.example/collect",
+      "https://fcm.googleapis.com.evil.example/x",
+      "https://169.254.169.254/latest",
+      "https://localhost/x",
+    ]) await rejectsWith(saveSubscription(db, ayu, { endpoint, keys: KEYS }), "BAD_REQUEST");
+    for (const endpoint of [
+      "https://fcm.googleapis.com/fcm/send/abc",
+      "https://updates.push.services.mozilla.com/wpush/v2/abc",
+      "https://web.push.apple.com/QGx",
+      "https://wns2-par02p.notify.windows.com/w/?token=abc",
+    ]) await saveSubscription(db, ayu, { endpoint, keys: KEYS });
+    assert.equal((await subscriptionsOf(db, ayu)).length, 4);
+  });
+});
+
 test("delivery signs with VAPID, drops expired subscriptions, and survives other failures", async () => {
   await withDb(async (db) => {
     const ayu = await person(db, "ayu");

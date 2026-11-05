@@ -24,6 +24,17 @@ const TTL_SECONDS = 4 * 3600;
 const VAPID_LOCK = 7262782;
 const BASE64URL = /^[A-Za-z0-9_-]+={0,2}$/;
 
+/**
+ * Layanan push milik browser (Chrome/Android, Firefox, Safari, Edge). Endpoint
+ * lain ditolak supaya server tidak bisa disuruh mengirim request ke alamat sembarang.
+ */
+const PUSH_HOSTS = new Set(["fcm.googleapis.com", "android.googleapis.com", "updates.push.services.mozilla.com"]);
+const PUSH_HOST_SUFFIXES = [".push.apple.com", ".notify.windows.com"];
+
+function isPushServiceHost(hostname: string): boolean {
+  return PUSH_HOSTS.has(hostname) || PUSH_HOST_SUFFIXES.some((suffix) => hostname.endsWith(suffix));
+}
+
 export function isQuietHour(now: Date): boolean {
   return hourWIB(now) < QUIET_UNTIL_HOUR;
 }
@@ -97,7 +108,7 @@ export async function saveSubscription(
   } catch {
     invalidSubscription();
   }
-  if (url.protocol !== "https:") invalidSubscription();
+  if (url.protocol !== "https:" || !isPushServiceHost(url.hostname)) invalidSubscription();
   if (typeof p256dh !== "string" || p256dh.length > 200 || !BASE64URL.test(p256dh)) invalidSubscription();
   if (typeof auth !== "string" || auth.length > 100 || !BASE64URL.test(auth)) invalidSubscription();
 
