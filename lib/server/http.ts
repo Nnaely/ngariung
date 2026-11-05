@@ -8,7 +8,10 @@ export const SESSION_COOKIE = "ngariung_session";
 const SESSION_MAX_AGE_S = 400 * 24 * 3600;
 
 export type RouteContext = { req: NextRequest; db: Db; params: Record<string, string> };
-type RouteArgs = { params?: Promise<Record<string, string | string[] | undefined>> };
+// Next.js memeriksa argumen kedua harus cocok dengan `{ params: Promise<SegmentParams> }`
+// milik setiap route, jadi tipenya dibuat longgar di sini dan disaring saat dipakai.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RouteArgs = { params: Promise<any> };
 
 /** Respons JSON yang tidak boleh di-cache. */
 export function ok(data: unknown, init: { status?: number } = {}): NextResponse {
@@ -96,10 +99,10 @@ function errorResponse(error: unknown): NextResponse {
  * siapkan database, dan ubah error menjadi JSON `{ error, message }`.
  */
 export function route(handler: (ctx: RouteContext) => Promise<Response>) {
-  return async (req: NextRequest, args?: RouteArgs): Promise<Response> => {
+  return async (req: NextRequest, args: RouteArgs): Promise<Response> => {
     try {
       if (req.method !== "GET" && req.method !== "HEAD") assertSameOrigin(req);
-      const raw = (await args?.params) ?? {};
+      const raw: Record<string, unknown> = (await args?.params) ?? {};
       const params = Object.fromEntries(
         Object.entries(raw).flatMap(([key, value]) => (typeof value === "string" ? [[key, value]] : [])),
       );

@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { BottomNav } from "./BottomNav";
+import { Toaster } from "./Toaster";
 
 const ROUTES = ["/", "/feed", "/main", "/leaderboard", "/profile"];
 function routeIndex(path: string) {
@@ -12,7 +13,7 @@ function routeIndex(path: string) {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { state, ready } = useStore();
+  const { state, ready, toasts, dismissToast } = useStore();
   const [navigation, setNavigation] = useState({ path: pathname, direction: "forward" });
 
   // Keep the previous route only to choose the entrance direction. The router
@@ -31,6 +32,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {children}
       </div>
       {ready && state.user && pathname !== "/login" && <BottomNav />}
+      <Toaster toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }
