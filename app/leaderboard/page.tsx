@@ -7,22 +7,7 @@ import { Avatar } from "@/components/Avatar";
 import { StreakFlame } from "@/components/StreakFlame";
 import { useStore } from "@/lib/store";
 import { todayWIB } from "@/lib/format";
-
-type Entry = {
-  username: string;
-  emoji: string;
-  color: string;
-  avatarUrl?: string;
-  streak: number;
-  week: number;
-  isMe: boolean;
-};
-
-function shiftDays(date: string, delta: number): string {
-  const [y, m, d] = date.split("-").map(Number);
-  const t = new Date(Date.UTC(y, m - 1, d + delta));
-  return t.toISOString().slice(0, 10);
-}
+import { buildLeaderboard, type LeaderboardEntry } from "@/lib/leaderboard";
 
 export default function LeaderboardPage() {
   return (
@@ -36,57 +21,17 @@ function Leaderboard() {
   const { state } = useStore();
   const user = state.user!;
   const [tab, setTab] = useState<"streak" | "week">("streak");
+  const today = todayWIB();
 
-  const entries = useMemo(() => {
-    const today = todayWIB();
-    const weekStart = shiftDays(today, -6);
-    const map = new Map<string, Entry>();
+  const entries = useMemo(() => buildLeaderboard({
+    checkIns: state.checkIns,
+    user,
+    currentStreak: state.streak.current,
+    today,
+    sortBy: tab,
+  }), [state.checkIns, state.streak.current, user, today, tab]);
 
-    const ensure = (
-      username: string,
-      emoji: string,
-      color: string,
-      avatarUrl?: string,
-    ) => {
-      let e = map.get(username);
-      if (!e) {
-        e = {
-          username,
-          emoji,
-          color,
-          avatarUrl,
-          streak: 0,
-          week: 0,
-          isMe: username === user.username,
-        };
-        map.set(username, e);
-      }
-      return e;
-    };
-
-    for (const c of state.checkIns) {
-      const e = ensure(c.username, c.emoji, c.color, c.avatarUrl);
-      e.streak = Math.max(e.streak, c.streak);
-      if (c.date >= weekStart) e.week += 1;
-      e.emoji = c.emoji;
-      e.color = c.color;
-      e.avatarUrl = c.avatarUrl;
-    }
-
-    ensure(user.username, user.emoji, user.color, user.avatarUrl);
-    const me = map.get(user.username);
-    if (me) me.streak = Math.max(me.streak, state.streak.current);
-
-    const list = [...map.values()];
-    if (tab === "streak") {
-      list.sort((a, b) => b.streak - a.streak || a.username.localeCompare(b.username));
-    } else {
-      list.sort((a, b) => b.week - a.week || b.streak - a.streak);
-    }
-    return list;
-  }, [state.checkIns, state.streak.current, user, tab]);
-
-  const value = (e: Entry) => (tab === "streak" ? e.streak : e.week);
+  const value = (e: LeaderboardEntry) => (tab === "streak" ? e.streak : e.week);
 
   return (
     <>
