@@ -23,6 +23,8 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  // Data API selalu langsung dari server (data pribadi & selalu berubah).
+  if (url.pathname.startsWith("/api/")) return;
 
   event.respondWith(
     fetch(req)
@@ -56,6 +58,25 @@ self.addEventListener("push", (event) => {
       renotify: false,
       vibrate: [80, 40, 80],
     }),
+  );
+});
+
+/* Browser mengganti langganan push: daftarkan yang baru ke server. */
+self.addEventListener("pushsubscriptionchange", (event) => {
+  const options = event.oldSubscription && event.oldSubscription.options;
+  if (!options || !options.applicationServerKey) return;
+  event.waitUntil(
+    self.registration.pushManager
+      .subscribe({ userVisibleOnly: true, applicationServerKey: options.applicationServerKey })
+      .then((subscription) =>
+        fetch("/api/push/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(subscription.toJSON()),
+        }),
+      )
+      .catch(() => {}),
   );
 });
 
