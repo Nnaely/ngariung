@@ -7,6 +7,7 @@ import "@/components/navigation.css";
 import { dailyWord, scoreGuess, type LetterMark } from "@/lib/games";
 import { useStore } from "@/lib/store";
 import { todayWIB } from "@/lib/format";
+import { ApiError } from "@/lib/api";
 
 const ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 
@@ -19,9 +20,8 @@ export default function KataPage() {
 }
 
 function Kata() {
-  const { state, update } = useStore();
-  const user = state.user!;
-  const today = todayWIB();
+  const { state, recordDaily } = useStore();
+  const today = state.today || todayWIB();
   const answer = dailyWord(today);
 
   const played = state.dailies.find((d) => d.date === today && d.game === "kata");
@@ -38,21 +38,11 @@ function Kata() {
   useEffect(() => {
     if (played || !finished || recorded) return;
     setRecorded(true);
-    update((s) => ({
-      ...s,
-      dailies: [
-        ...s.dailies,
-        {
-          date: today,
-          game: "kata",
-          username: user.username,
-          solved,
-          score: solved ? 1 : 0,
-          at: new Date().toISOString(),
-        },
-      ],
-    }));
-  }, [finished, played, recorded, solved, today, update, user.username]);
+    recordDaily({ game: "kata", solved }).catch((error: unknown) => {
+      if (error instanceof ApiError && error.code === "ALREADY_PLAYED") return;
+      setMessage(error instanceof ApiError ? error.message : "Hasil belum tersimpan. Cek koneksimu.");
+    });
+  }, [finished, played, recorded, solved, recordDaily]);
 
   const keyMarks = (() => {
     const best: Record<string, LetterMark> = {};

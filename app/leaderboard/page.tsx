@@ -6,8 +6,7 @@ import { SegmentedControl } from "@/components/SegmentedControl";
 import { Avatar } from "@/components/Avatar";
 import { StreakFlame } from "@/components/StreakFlame";
 import { useStore } from "@/lib/store";
-import { todayWIB } from "@/lib/format";
-import { buildLeaderboard, type LeaderboardEntry } from "@/lib/leaderboard";
+import { sortLeaderboard, type LeaderboardEntry } from "@/lib/leaderboard";
 
 export default function LeaderboardPage() {
   return (
@@ -21,15 +20,11 @@ function Leaderboard() {
   const { state } = useStore();
   const user = state.user!;
   const [tab, setTab] = useState<"streak" | "week">("streak");
-  const today = todayWIB();
 
-  const entries = useMemo(() => buildLeaderboard({
-    checkIns: state.checkIns,
-    user,
-    currentStreak: state.streak.current,
-    today,
-    sortBy: tab,
-  }), [state.checkIns, state.streak.current, user, today, tab]);
+  const entries = useMemo(
+    () => sortLeaderboard(state.leaderboard, user.username, tab),
+    [state.leaderboard, user.username, tab],
+  );
 
   const value = (e: LeaderboardEntry) => (tab === "streak" ? e.streak : e.week);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Guard } from "@/components/Guard";
 import { Dialog } from "@/components/Dialog";
@@ -20,11 +20,11 @@ import { checkedInToday, todayCheckIns, useStore } from "@/lib/store";
 import { flameTier, nextFlameTier } from "@/lib/flame";
 import { StreakFlame } from "@/components/StreakFlame";
 import {
-  applyCheckIn,
   broadcastBody,
   effectiveFreezes,
   FREEZES_PER_MONTH,
 } from "@/lib/streak";
+import { ApiError } from "@/lib/api";
 import {
   ACCURACY_MAX_M,
   PANCONG,
@@ -40,7 +40,9 @@ import {
   nextMonthStartLabel,
   todayWIB,
 } from "@/lib/format";
-import type { CheckIn } from "@/lib/types";
+
+/** Lokasi simulasi (?demo=in/out, ?lat&lng) hanya untuk development, bukan produksi. */
+const DEMO_ALLOWED = process.env.NODE_ENV !== "production";
 
 type Coords = { lat: number; lng: number; accuracy: number };
 type Phase = "locating" | "denied" | "unsupported" | "error" | "ready";
@@ -62,23 +64,19 @@ export default function HomePage() {
 }
 
 function Home() {
-  const { state, update } = useStore();
+  const { state, checkIn } = useStore();
   const [coords, setCoords] = useState<Coords | null>(null);
   const [phase, setPhase] = useState<Phase>("locating");
   const [submitting, setSubmitting] = useState(false);
+  const [checkInError, setCheckInError] = useState<string | null>(null);
   const [success, setSuccess] = useState<SuccessInfo | null>(null);
   const [successOpen, setSuccessOpen] = useState(false);
   const [locationAttempt, setLocationAttempt] = useState(0);
-  const submissionTimer = useRef<number | null>(null);
-
-  useEffect(() => () => {
-    if (submissionTimer.current !== null) window.clearTimeout(submissionTimer.current);
-  }, []);
 
   useEffect(() => {
     setPhase("locating");
     setCoords(null);
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(DEMO_ALLOWED ? window.location.search : "");
     const demo = params.get("demo");
     const latParam = params.get("lat");
     const lngParam = params.get("lng");
@@ -130,15 +128,22 @@ function Home() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, [locationAttempt]);
 
+  // Pesan gagal absen hilang sendiri, lalu status GPS tampil lagi.
+  useEffect(() => {
+    if (!checkInError) return;
+    const timer = window.setTimeout(() => setCheckInError(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [checkInError]);
+
   const user = state.user!;
-  const today = todayWIB();
+  const today = state.today || todayWIB();
   const done = checkedInToday(state);
   const items = todayCheckIns(state);
   const friends = items.filter((i) => i.username !== user.username);
 
   // Pratinjau kartu sukses untuk screenshot/demo: ?demo=win
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("demo") !== "win") return;
+    if (!DEMO_ALLOWED || new URLSearchParams(window.location.search).get("demo") !== "win") return;
     setSuccess({
       streak: 13,
       freezeUsed: false,
@@ -173,6 +178,7 @@ function Home() {
 
   let statusText = "";
   if (done) statusText = `Sudah absen hari ini · reset dalam ${countdownToReset()}`;
+  else if (checkInError) statusText = checkInError;
   else if (phase === "locating") statusText = "Menunggu sinyal GPS…";
   else if (phase === "denied")
     statusText =
@@ -188,43 +194,29 @@ function Home() {
     statusText = `${formatDistance(dist)} dari Pancong · arah ${cardinalDirection(bearing)}`;
   else statusText = `${formatDistance(dist)} dari titik absen`;
 
-  const handleCheckIn = () => {
-    if (!canCheckIn || submissionTimer.current !== null) return;
+  const handleCheckIn = async () => {
+    if (!canCheckIn || !coords) return;
     setSubmitting(true);
-
-    submissionTimer.current = window.setTimeout(() => {
-      submissionTimer.current = null;
-      const result = applyCheckIn(streak, today);
-      const entry: CheckIn = {
-        id:
-          typeof crypto !== "undefined" && "randomUUID" in crypto
-            ? crypto.randomUUID()
-            : `local-${Date.now()}`,
-        username: user.username,
-        emoji: user.emoji,
-        color: user.color,
-        avatarUrl: user.avatarUrl,
-        at: new Date().toISOString(),
-        date: today,
-        streak: result.streak.current,
-      };
-
-      update((s) => checkedInToday(s, today) ? s : ({
-        ...s,
-        streak: result.streak,
-        checkIns: [entry, ...s.checkIns],
-      }));
-
-      setSubmitting(false);
+    setCheckInError(null);
+    try {
+      const { outcome, notified } = await checkIn({
+        lat: coords.lat,
+        lng: coords.lng,
+        accuracy: coords.accuracy,
+      });
       setSuccess({
-        streak: result.streak.current,
-        milestone: result.milestone,
-        freezeUsed: result.freezeUsed,
+        streak: outcome.streak,
+        milestone: outcome.milestone,
+        freezeUsed: outcome.freezeUsed,
         message: broadcastBody(user.username),
-        friends: friends.length,
+        friends: notified,
       });
       setSuccessOpen(true);
-    }, 650);
+    } catch (error) {
+      setCheckInError(error instanceof ApiError ? error.message : "Absen gagal terkirim. Coba lagi, ya.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -485,7 +477,7 @@ function Home() {
         </section>
 
         <p className="mt-8 text-center text-[9.5px] leading-relaxed text-muted/50">
-          Streak dan aktivitasmu tersimpan di perangkat ini.
+          Absenmu langsung terlihat oleh teman-teman.
         </p>
       </main>
 
@@ -526,7 +518,11 @@ function Home() {
               <p className="mt-2 text-[12px] leading-relaxed text-fg/85">
                 “{success.message}”
               </p>
-              <p className="mt-1.5 text-[10px] text-muted">Absen tercatat di perangkat ini.</p>
+              <p className="mt-1.5 text-[10px] text-muted">
+                {success.friends > 0
+                  ? `Dikirim ke ${success.friends} teman yang belum absen.`
+                  : "Teman yang menyalakan notifikasi akan dapat kabar ini."}
+              </p>
             </div>
 
             <button

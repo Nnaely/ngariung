@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Guard } from "@/components/Guard";
 import { Avatar } from "@/components/Avatar";
@@ -12,18 +12,26 @@ import {
   BellIcon,
   CheckIcon,
   ChevronRightIcon,
-  RotateIcon,
   SnowflakeIcon,
 } from "@/components/Icons";
 import { useStore } from "@/lib/store";
-import { effectiveFreezes, FREEZES_PER_MONTH, broadcastBody, broadcastTitle } from "@/lib/streak";
+import { effectiveFreezes, FREEZES_PER_MONTH } from "@/lib/streak";
 import { monthName, nextMonthStartLabel, todayWIB } from "@/lib/format";
 import { fileToAvatar } from "@/lib/image";
+import { AVATAR_EMOJIS, normalizeUsername, usernameError } from "@/lib/identity";
+import { ApiError } from "@/lib/api";
+import {
+  disablePush,
+  enablePush,
+  getPushSubscription,
+  pushSupport,
+  sendTestPush,
+  type PushSupport,
+} from "@/lib/push-client";
 import "./profile.css";
 
-const USERNAME_RE = /^[a-z0-9](?:[a-z0-9._]{1,18})[a-z0-9]$/;
-const EMOJIS = ["🔥", "😎", "🌻", "🐧", "🍓", "⚡", "🐱", "🎧", "🍊", "🌙"];
-const COLORS = ["#FF5A1F", "#FFB020", "#2EE6A8", "#FF4D6D", "#5AC8FA", "#A78BFA"];
+const errorText = (error: unknown, fallback: string) =>
+  error instanceof ApiError || error instanceof Error ? error.message : fallback;
 
 export default function ProfilePage() {
   return (
@@ -34,7 +42,7 @@ export default function ProfilePage() {
 }
 
 function Profile() {
-  const { state, update } = useStore();
+  const { state, updateProfile, logout } = useStore();
   const router = useRouter();
   const user = state.user!;
 
@@ -42,13 +50,16 @@ function Profile() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [editing, setEditing] = useState<"username" | "avatar" | null>(null);
-  const [resetOpen, setResetOpen] = useState(false);
+  const [savingName, setSavingName] = useState(false);
   const [busyPhoto, setBusyPhoto] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [support, setSupport] = useState<PushSupport>("supported");
   const [permission, setPermission] = useState<
     NotificationPermission | "unsupported"
   >("default");
   const [notifOn, setNotifOn] = useState(false);
+  const [notifBusy, setNotifBusy] = useState(false);
+  const [notifError, setNotifError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!notice) return;
@@ -57,12 +68,16 @@ function Profile() {
   }, [notice]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !("Notification" in window)) {
+    const level = pushSupport();
+    setSupport(level);
+    if (level !== "supported") {
       setPermission("unsupported");
       return;
     }
     setPermission(Notification.permission);
-    setNotifOn(Notification.permission === "granted");
+    void getPushSubscription()
+      .then((subscription) => setNotifOn(Boolean(subscription) && Notification.permission === "granted"))
+      .catch(() => setNotifOn(false));
     void closeAppNotifications();
   }, []);
 
@@ -78,55 +93,35 @@ function Profile() {
     }
   };
 
-  const mine = useMemo(
-    () => state.checkIns.filter((c) => c.username === user.username),
-    [state.checkIns, user.username],
-  );
-
-  const taken = useMemo(() => {
-    const set = new Set(state.checkIns.map((c) => c.username));
-    set.delete(user.username);
-    return set;
-  }, [state.checkIns, user.username]);
-
-  const saveUsername = () => {
-    const value = draft.trim().toLowerCase();
+  const saveUsername = async () => {
+    if (savingName) return;
+    const value = normalizeUsername(draft);
     if (value === user.username) return setEditing(null);
-    if (value.length < 3) return setError("Minimal 3 karakter.");
-    if (value.length > 20) return setError("Maksimal 20 karakter.");
-    if (!USERNAME_RE.test(value))
-      return setError("Hanya huruf kecil, angka, titik, underscore.");
-    if (taken.has(value)) return setError("Username itu sudah dipakai.");
+    const problem = usernameError(value);
+    if (problem) return setError(problem);
 
-    const previous = user.username;
-    update((s) => ({
-      ...s,
-      user: s.user ? { ...s.user, username: value } : s.user,
-      checkIns: s.checkIns.map((c) =>
-        c.username === previous ? { ...c, username: value } : c,
-      ),
-      dailies: s.dailies.map((record) => record.username === previous ? { ...record, username: value } : record),
-      battles: s.battles.map((record) => ({
-        ...record,
-        playerA: record.playerA === previous ? value : record.playerA,
-        playerB: record.playerB === previous ? value : record.playerB,
-        winner: record.winner === previous ? value : record.winner,
-      })),
-    }));
-    setDraft(value);
-    setError(null);
-    setEditing(null);
-    setNotice("Username berhasil disimpan.");
+    setSavingName(true);
+    try {
+      await updateProfile({ username: value });
+      setDraft(value);
+      setError(null);
+      setEditing(null);
+      setNotice("Username berhasil disimpan.");
+    } catch (err) {
+      setError(errorText(err, "Username gagal disimpan."));
+    } finally {
+      setSavingName(false);
+    }
   };
 
-  const pickEmoji = (emoji: string) => {
-    const color = COLORS[EMOJIS.indexOf(emoji) % COLORS.length];
-    update((s) => ({
-      ...s,
-      user: s.user ? { ...s.user, emoji, color, avatarUrl: undefined } : s.user,
-    }));
+  const pickEmoji = async (emoji: string) => {
     setPhotoError(null);
-    setNotice("Avatar baru, semangat baru!");
+    try {
+      await updateProfile(user.avatarUrl ? { emoji, avatar: null } : { emoji });
+      setNotice("Avatar baru, semangat baru!");
+    } catch (err) {
+      setPhotoError(errorText(err, "Avatar gagal disimpan."));
+    }
   };
 
   const onPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -137,62 +132,60 @@ function Profile() {
     setPhotoError(null);
     setBusyPhoto(true);
     try {
-      const dataUrl = await fileToAvatar(file);
-      update((s) => ({
-        ...s,
-        user: s.user ? { ...s.user, avatarUrl: dataUrl } : s.user,
-      }));
+      await updateProfile({ avatar: await fileToAvatar(file) });
       setNotice("Foto profil berhasil disimpan.");
     } catch (err) {
-      setPhotoError(
-        err instanceof Error ? err.message : "Gagal memuat foto.",
-      );
+      setPhotoError(errorText(err, "Gagal memuat foto."));
     } finally {
       setBusyPhoto(false);
     }
   };
 
-  const removePhoto = () => {
+  const removePhoto = async () => {
     setPhotoError(null);
-    update((s) => ({
-      ...s,
-      user: s.user ? { ...s.user, avatarUrl: undefined } : s.user,
-    }));
+    try {
+      await updateProfile({ avatar: null });
+    } catch (err) {
+      setPhotoError(errorText(err, "Foto gagal dihapus."));
+    }
   };
 
   const toggleNotifications = async () => {
-    if (!("Notification" in window)) return;
-
-    if (notifOn) {
-      setNotifOn(false);
-      await closeAppNotifications();
-      return;
+    if (support !== "supported" || notifBusy) return;
+    setNotifBusy(true);
+    setNotifError(null);
+    try {
+      if (notifOn) {
+        await disablePush();
+        await closeAppNotifications();
+        setNotifOn(false);
+        setNotice("Notifikasi dimatikan.");
+      } else {
+        await enablePush();
+        setNotifOn(true);
+        setNotice("Notifikasi aktif. Kamu dikabari saat teman absen.");
+      }
+    } catch (err) {
+      setNotifError(errorText(err, "Notifikasi gagal diatur."));
+    } finally {
+      setPermission(Notification.permission);
+      setNotifBusy(false);
     }
-
-    const result = await Notification.requestPermission();
-    setPermission(result);
-    setNotifOn(result === "granted");
   };
 
-  /** Contoh notifikasi yang nanti diterima teman saat kamu absen. */
-  const sendSampleNotification = () => {
-    if (!("Notification" in window) || Notification.permission !== "granted") {
-      return;
+  /** Contoh notifikasi lewat server, persis seperti saat teman absen. */
+  const sendSampleNotification = async () => {
+    setNotifError(null);
+    try {
+      await sendTestPush();
+      setNotice("Contoh notifikasi dikirim ke perangkat ini.");
+    } catch (err) {
+      setNotifError(errorText(err, "Contoh notifikasi gagal dikirim."));
     }
-    new Notification(broadcastTitle(user.username), {
-      body: broadcastBody(user.username),
-      icon: "/icons/icon-192.png",
-      tag: "ngariung-contoh",
-    });
   };
 
-  const resetDemo = () => {
-    window.localStorage.removeItem("ngariung.v1");
-    window.location.href = "/login";
-  };
-
-  const logout = () => {
-    update((s) => ({ ...s, user: null }));
+  const handleLogout = async () => {
+    await logout();
     router.replace("/login");
   };
 
@@ -225,7 +218,7 @@ function Profile() {
             { label: "Terbaik", value: state.streak.longest },
             {
               label: "Total absen",
-              value: Math.max(mine.length, state.streak.current),
+              value: state.totalCheckIns,
             },
           ].map((s) => (
             <div key={s.label} className="card px-3 py-3.5 text-center">
@@ -302,11 +295,12 @@ function Profile() {
               type="button"
               onClick={toggleNotifications}
               aria-pressed={notifOn}
-              disabled={permission === "unsupported" || permission === "denied"}
+              aria-busy={notifBusy}
+              disabled={support !== "supported" || permission === "denied" || notifBusy}
               className="flex w-full items-center gap-3 py-3.5 text-left"
             >
               <BellIcon className="h-4 w-4 text-muted" />
-              <span className="flex-1 text-[12.5px]">Notifikasi</span>
+              <span className="flex-1 text-[12.5px]">Notifikasi absen teman</span>
               <span
                 className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                   notifOn
@@ -314,15 +308,28 @@ function Profile() {
                     : "border border-line text-muted"
                 }`}
               >
-                {permission === "unsupported"
-                  ? "tidak didukung"
-                  : permission === "denied"
-                    ? "diblokir browser"
-                    : notifOn
-                      ? "aktif"
-                      : "mati"}
+                {support === "needs-install"
+                  ? "pasang dulu"
+                  : support === "unsupported"
+                    ? "tidak didukung"
+                    : permission === "denied"
+                      ? "diblokir browser"
+                      : notifBusy
+                        ? "sebentar…"
+                        : notifOn
+                          ? "aktif"
+                          : "mati"}
               </span>
             </button>
+
+            {(support === "needs-install" || permission === "denied" || notifError) && (
+              <p role={notifError ? "alert" : undefined} className={`py-3 text-[11px] leading-relaxed ${notifError ? "text-danger" : "text-muted"}`}>
+                {notifError ??
+                  (support === "needs-install"
+                    ? "Di iPhone, pasang Ngariung ke Home Screen dulu (Share → Add to Home Screen), lalu buka dari ikonnya untuk menyalakan notifikasi."
+                    : "Notifikasi diblokir. Izinkan lewat ikon gembok di address bar, lalu muat ulang halaman.")}
+              </p>
+            )}
 
             {notifOn && (
               <button
@@ -340,16 +347,7 @@ function Profile() {
 
             <button
               type="button"
-              onClick={() => setResetOpen(true)}
-              className="flex w-full items-center gap-3 py-3.5 text-left"
-            >
-              <RotateIcon className="h-4 w-4 text-muted" />
-              <span className="flex-1 text-[12.5px]">Hapus data perangkat</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={logout}
+              onClick={handleLogout}
               className="flex w-full items-center gap-3 py-3.5 text-left"
             >
               <span className="grid h-4 w-4 place-items-center text-muted">→</span>
@@ -360,7 +358,7 @@ function Profile() {
 
         <p className="mt-8 flex items-center justify-center gap-1.5 text-[9.5px] text-muted/50">
           <span aria-hidden="true" className="h-1 w-1 rounded-full bg-flame" />
-          Ngariung v0.2 · data lokal
+          Ngariung v0.3 · tersinkron
         </p>
       </main>
 
@@ -390,7 +388,7 @@ function Profile() {
           </div>
           <p id="profile-username-help" className="mt-2 text-[11px] leading-relaxed text-muted">3–20 karakter. Pakai huruf kecil, angka, titik, atau underscore.</p>
           {error && <p id="profile-username-error" role="alert" className="mt-2 text-xs text-danger">{error}</p>}
-          <button type="submit" className="btn-accent mt-5 w-full py-3.5 text-sm">Simpan perubahan</button>
+          <button type="submit" disabled={savingName} className="btn-accent mt-5 w-full py-3.5 text-sm disabled:opacity-60">{savingName ? "Menyimpan…" : "Simpan perubahan"}</button>
         </form>
       </Dialog>
 
@@ -417,7 +415,7 @@ function Profile() {
         {photoError && <p role="alert" className="mt-3 text-xs text-danger">{photoError}</p>}
         <p className="mb-3 mt-6 text-xs text-muted">Atau pilih emoji andalanmu</p>
         <div className="grid grid-cols-5 gap-2">
-          {EMOJIS.map((emoji) => (
+          {AVATAR_EMOJIS.map((emoji) => (
             <button
               key={emoji}
               type="button"
@@ -430,16 +428,6 @@ function Profile() {
         </div>
         <p className="mt-4 text-center text-[11px] text-muted">Pilihanmu langsung tersimpan.</p>
         <button type="button" onClick={() => setEditing(null)} className="btn-accent mt-4 w-full py-3.5 text-sm">Selesai</button>
-      </Dialog>
-
-      <Dialog open={resetOpen} onClose={() => setResetOpen(false)} labelledBy="reset-dialog-title" describedBy="reset-dialog-description">
-        <span className="grid h-12 w-12 place-items-center rounded-2xl bg-danger/10 text-danger"><RotateIcon className="h-5 w-5" /></span>
-        <h2 id="reset-dialog-title" className="mt-4 text-xl font-bold tracking-tight">Mulai dari awal?</h2>
-        <p id="reset-dialog-description" className="mt-3 text-[13px] leading-relaxed text-muted">Profil, riwayat absen, streak, dan hasil game di perangkat ini akan dihapus. Data yang dihapus tidak bisa dikembalikan.</p>
-        <div className="mt-6 flex gap-3">
-          <button type="button" data-dialog-autofocus onClick={() => setResetOpen(false)} className="btn-quiet flex-1 py-3 text-xs">Batal</button>
-          <button type="button" onClick={resetDemo} className="flex-1 rounded-2xl bg-danger px-3 py-3 text-xs font-bold text-bg">Hapus data</button>
-        </div>
       </Dialog>
     </>
   );

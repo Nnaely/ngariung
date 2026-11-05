@@ -13,7 +13,7 @@ import {
   type Cell,
 } from "@/lib/games";
 import { todayWIB } from "@/lib/format";
-import type { BattleRecord } from "@/lib/types";
+import { ApiError } from "@/lib/api";
 
 type GameKey = "ttt" | "guess";
 
@@ -26,9 +26,9 @@ export default function MainPage() {
 }
 
 function Main() {
-  const { state, update } = useStore();
+  const { state, recordBattle } = useStore();
   const user = state.user!;
-  const today = todayWIB();
+  const today = state.today || todayWIB();
 
   const atPancong = checkedInToday(state);
   const present = todayCheckIns(state).filter((c) => c.username !== user.username);
@@ -57,38 +57,23 @@ function Main() {
   const kataDone = state.dailies.find((d) => d.date === today && d.game === "kata");
   const tekaDone = state.dailies.find((d) => d.date === today && d.game === "teka");
 
-  const battleBoard = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const b of state.battles) {
-      map.set(b.winner, (map.get(b.winner) ?? 0) + 1);
-    }
-    return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
-  }, [state.battles]);
-
-  const dailyBoard = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const d of state.dailies) {
-      if (!d.solved) continue;
-      map.set(d.username, (map.get(d.username) ?? 0) + d.score);
-    }
-    return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
-  }, [state.dailies]);
+  // Papan bersama dari server: [nama, nilai].
+  const battleBoard = useMemo(
+    () => state.battleBoard.map((row) => [row.name, row.value] as const),
+    [state.battleBoard],
+  );
+  const dailyBoard = useMemo(
+    () => state.dailyBoard.map((row) => [row.name, row.value] as const),
+    [state.dailyBoard],
+  );
 
   const record = (winner: string) => {
-    const rec: BattleRecord = {
-      id:
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `battle-${Date.now()}`,
-      date: today,
-      game,
-      playerA: user.username,
-      playerB: matchOpp ?? "Lawan",
-      winner,
-      at: new Date().toISOString(),
-    };
-    update((s) => ({ ...s, battles: [rec, ...s.battles] }));
-    setNotice(`${winner} menang!`);
+    setNotice(`${winner} menang! Menyimpan hasil…`);
+    recordBattle({ game, playerB: matchOpp ?? "Lawan", winner })
+      .then(() => setNotice(`${winner} menang!`))
+      .catch((error: unknown) =>
+        setNotice(error instanceof ApiError ? error.message : "Hasil battle gagal disimpan. Cek koneksimu."),
+      );
   };
 
   const startMatch = () => {

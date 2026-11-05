@@ -19,9 +19,8 @@ export default function TekaPage() {
 }
 
 function Teka() {
-  const { state, update } = useStore();
-  const user = state.user!;
-  const today = todayWIB();
+  const { state, recordDaily } = useStore();
+  const today = state.today || todayWIB();
   const teka = dailyTeka(today);
   const played = state.dailies.find((d) => d.date === today && d.game === "teka");
 
@@ -39,20 +38,8 @@ function Teka() {
     if (saving.current) return;
     saving.current = true;
     setOutcome(isCorrect);
-    update((s) => ({
-      ...s,
-      dailies: [
-        ...s.dailies,
-        {
-          date: today,
-          game: "teka",
-          username: user.username,
-          solved: isCorrect,
-          score: isCorrect ? 1 : 0,
-          at: new Date().toISOString(),
-        },
-      ],
-    }));
+    // Hasil tetap tampil walau gagal tersimpan; skor masuk papan saat tersimpan.
+    recordDaily({ game: "teka", solved: isCorrect }).catch(() => undefined);
   };
 
   const submit = () => {
