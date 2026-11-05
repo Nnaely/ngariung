@@ -6,6 +6,7 @@ import { Guard } from "@/components/Guard";
 import { BottomNav } from "@/components/BottomNav";
 import { Avatar } from "@/components/Avatar";
 import { StreakFlame } from "@/components/StreakFlame";
+import { InstallRow } from "@/components/InstallRow";
 import {
   BellIcon,
   CheckIcon,
@@ -13,7 +14,7 @@ import {
   SnowflakeIcon,
 } from "@/components/Icons";
 import { useStore } from "@/lib/store";
-import { effectiveFreezes, FREEZES_PER_MONTH } from "@/lib/streak";
+import { effectiveFreezes, FREEZES_PER_MONTH, broadcastBody, broadcastTitle } from "@/lib/streak";
 import { monthName, nextMonthStartLabel, todayWIB } from "@/lib/format";
 import { fileToAvatar } from "@/lib/image";
 
@@ -42,6 +43,7 @@ function Profile() {
   const [permission, setPermission] = useState<
     NotificationPermission | "unsupported"
   >("default");
+  const [notifOn, setNotifOn] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("Notification" in window)) {
@@ -49,7 +51,21 @@ function Profile() {
       return;
     }
     setPermission(Notification.permission);
+    setNotifOn(Notification.permission === "granted");
+    void closeAppNotifications();
   }, []);
+
+  /** Tutup notifikasi Ngariung yang masih menempel di notification center. */
+  const closeAppNotifications = async () => {
+    try {
+      if (!("serviceWorker" in navigator)) return;
+      const reg = await navigator.serviceWorker.ready;
+      const list = await reg.getNotifications();
+      list.forEach((n) => n.close());
+    } catch {
+      /* diabaikan */
+    }
+  };
 
   const mine = useMemo(
     () => state.checkIns.filter((c) => c.username === user.username),
@@ -123,16 +139,30 @@ function Profile() {
     }));
   };
 
-  const enableNotifications = async () => {
+  const toggleNotifications = async () => {
     if (!("Notification" in window)) return;
+
+    if (notifOn) {
+      setNotifOn(false);
+      await closeAppNotifications();
+      return;
+    }
+
     const result = await Notification.requestPermission();
     setPermission(result);
-    if (result === "granted") {
-      new Notification("Ngariung aktif", {
-        body: "Kamu akan dapat kabar saat temanmu absen di Pancong.",
-        icon: "/icons/icon-192.png",
-      });
+    setNotifOn(result === "granted");
+  };
+
+  /** Contoh notifikasi yang nanti diterima teman saat kamu absen. */
+  const sendSampleNotification = () => {
+    if (!("Notification" in window) || Notification.permission !== "granted") {
+      return;
     }
+    new Notification(broadcastTitle(user.username), {
+      body: broadcastBody(user.username),
+      icon: "/icons/icon-192.png",
+      tag: "ngariung-contoh",
+    });
   };
 
   const resetDemo = () => {
@@ -297,27 +327,44 @@ function Profile() {
         <section className="mt-8">
           <h2 className="eyebrow">Pengaturan</h2>
           <div className="mt-3 divide-y divide-line border-y border-line">
+            <InstallRow />
             <button
               type="button"
-              onClick={enableNotifications}
+              onClick={toggleNotifications}
               className="flex w-full items-center gap-3 py-3.5 text-left"
             >
               <BellIcon className="h-4 w-4 text-muted" />
               <span className="flex-1 text-[12.5px]">Notifikasi</span>
               <span
-                className={`text-[10.5px] ${
-                  permission === "granted" ? "text-mint" : "text-muted"
+                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                  notifOn
+                    ? "bg-mint/15 text-mint"
+                    : "border border-line text-muted"
                 }`}
               >
-                {permission === "granted"
-                  ? "aktif"
+                {permission === "unsupported"
+                  ? "tidak didukung"
                   : permission === "denied"
-                    ? "diblokir"
-                    : permission === "unsupported"
-                      ? "tidak didukung"
-                      : "ketuk untuk aktifkan"}
+                    ? "diblokir browser"
+                    : notifOn
+                      ? "aktif"
+                      : "mati"}
               </span>
             </button>
+
+            {notifOn && (
+              <button
+                type="button"
+                onClick={sendSampleNotification}
+                className="flex w-full items-center gap-3 py-3.5 text-left"
+              >
+                <span className="grid h-4 w-4 place-items-center text-[11px]">
+                  🔔
+                </span>
+                <span className="flex-1 text-[12.5px]">Kirim contoh notifikasi</span>
+                <span className="text-[10px] text-muted">sekali tap</span>
+              </button>
+            )}
 
             <button
               type="button"

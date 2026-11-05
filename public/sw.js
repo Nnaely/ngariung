@@ -52,6 +52,8 @@ self.addEventListener("push", (event) => {
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",
       data: { url: data.url || "/feed" },
+      tag: data.tag || "ngariung-absen",
+      renotify: false,
       vibrate: [80, 40, 80],
     }),
   );

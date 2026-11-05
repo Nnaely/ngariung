@@ -43,12 +43,15 @@ Semua mahasiswa yang punya email aktif **@polban.ac.id**. Email lain (Gmail, Yah
 
 ### 1. Pasang di HP
 
-Buka alamat Ngariung di browser HP.
+Cara paling gampang: buka aplikasinya, lalu masuk ke **Profil → Pengaturan → Pasang aplikasi**.
 
-- **Android (Chrome):** tekan menu **⋮** → **Install app** / **Tambahkan ke layar utama**
-- **iPhone (Safari):** tekan **Share** → **Add to Home Screen**
+Kalau tombolnya tidak muncul, pasang manual lewat browser:
 
-Setelah terpasang, Ngariung muncul di layar utama seperti aplikasi biasa — tanpa address bar.
+- **Android (Chrome):** menu **⋮** → **Install app** / **Tambahkan ke layar utama**
+- **iPhone (Safari):** tombol **Share** → **Add to Home Screen**
+- **Desktop (Chrome/Edge):** klik ikon install di address bar, atau menu **⋮** → **Cast, save, and share** → **Install page as app**
+
+Kalau opsi install tidak ada sama sekali, biasanya aplikasinya sudah terpasang, atau browser yang dipakai bukan Chrome/Safari.
 
 ### 2. Masuk dengan email kampus
 
