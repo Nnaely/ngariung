@@ -21,6 +21,7 @@ import { fileToAvatar } from "@/lib/image";
 import { AVATAR_EMOJIS, normalizeUsername, usernameError } from "@/lib/identity";
 import { ApiError } from "@/lib/api";
 import {
+  closeAppNotifications,
   disablePush,
   enablePush,
   getPushSubscription,
@@ -78,20 +79,10 @@ function Profile() {
     void getPushSubscription()
       .then((subscription) => setNotifOn(Boolean(subscription) && Notification.permission === "granted"))
       .catch(() => setNotifOn(false));
-    void closeAppNotifications();
+    void closeNotifications();
   }, []);
 
-  /** Tutup notifikasi Ngariung yang masih menempel di notification center. */
-  const closeAppNotifications = async () => {
-    try {
-      if (!("serviceWorker" in navigator)) return;
-      const reg = await navigator.serviceWorker.ready;
-      const list = await reg.getNotifications();
-      list.forEach((n) => n.close());
-    } catch {
-      /* diabaikan */
-    }
-  };
+  const closeNotifications = () => closeAppNotifications().catch(() => undefined);
 
   const saveUsername = async () => {
     if (savingName) return;
@@ -157,7 +148,7 @@ function Profile() {
     try {
       if (notifOn) {
         await disablePush();
-        await closeAppNotifications();
+        await closeNotifications();
         setNotifOn(false);
         setNotice("Notifikasi dimatikan.");
       } else {

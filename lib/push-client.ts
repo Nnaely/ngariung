@@ -19,10 +19,35 @@ export function pushSupport(): PushSupport {
   return "unsupported";
 }
 
+/**
+ * Registrasi service worker yang ada, tanpa menunggu. `serviceWorker.ready`
+ * tidak pernah selesai kalau registrasi gagal, jadi jangan dipakai di sini.
+ */
+async function currentRegistration(): Promise<ServiceWorkerRegistration | null> {
+  return (await navigator.serviceWorker.getRegistration()) ?? null;
+}
+
+/** Tunggu service worker aktif, paling lama `timeoutMs`. */
+async function activeRegistration(timeoutMs = 8000): Promise<ServiceWorkerRegistration | null> {
+  const existing = await currentRegistration();
+  if (existing?.active) return existing;
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<null>((resolve) => window.setTimeout(() => resolve(null), timeoutMs)),
+  ]);
+}
+
 export async function getPushSubscription(): Promise<PushSubscription | null> {
   if (pushSupport() !== "supported") return null;
-  const registration = await navigator.serviceWorker.ready;
-  return registration.pushManager.getSubscription();
+  const registration = await currentRegistration();
+  return registration ? registration.pushManager.getSubscription() : null;
+}
+
+/** Tutup notifikasi Ngariung yang masih menempel di notification center. */
+export async function closeAppNotifications(): Promise<void> {
+  const registration = "serviceWorker" in navigator ? await currentRegistration() : null;
+  const list = registration ? await registration.getNotifications() : [];
+  list.forEach((notification) => notification.close());
 }
 
 function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
@@ -38,7 +63,8 @@ export async function enablePush(): Promise<void> {
   const permission = await Notification.requestPermission();
   if (permission !== "granted") throw new Error("Izin notifikasi tidak diberikan.");
   const { publicKey } = await apiFetch<{ publicKey: string }>("/api/push/key");
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await activeRegistration();
+  if (!registration) throw new Error("Aplikasi belum siap menerima notifikasi. Muat ulang halaman, lalu coba lagi.");
   let subscription = await registration.pushManager.getSubscription();
   if (subscription) {
     // Langganan lama dengan kunci server lain tidak akan bisa dipakai.
