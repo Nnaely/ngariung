@@ -57,6 +57,11 @@ Kalau opsi install tidak ada sama sekali, biasanya aplikasinya sudah terpasang, 
 
 Masukkan email `@ikamasu.ac.id`. Sistem akan menolak domain lain.
 
+- **Akun baru:** pilih username, avatar, dan buat **PIN 6 angka**.
+- **Sudah punya akun** (misalnya ganti HP): cukup email yang sama + PIN-mu.
+
+PIN salah 5 kali berturut-turut membuat akun terkunci 15 menit. Lupa PIN? Minta admin Ngariung mengaturnya ulang.
+
 ![Masuk](shots/01-login-crop.png)
 
 ### 3. Pilih username dan avatar
@@ -166,7 +171,10 @@ Ngariung hanya menerima email `@ikamasu.ac.id`. Pastikan tidak ada salah ketik a
 Bisa, kapan saja, lewat Profil. Username lama langsung hilang dari feed.
 
 **Apakah data saya aman?**
-Lokasi hanya dipakai untuk memeriksa jarak saat absen dan tidak pernah ditampilkan ke pengguna lain. Data saat ini tersimpan di perangkatmu sendiri.
+Lokasi hanya dipakai untuk memeriksa jarak saat absen dan tidak pernah ditampilkan ke pengguna lain. Akun, absen, streak, dan hasil game tersimpan di server Ngariung supaya teman bisa melihat feed dan peringkat yang sama. PIN disimpan dalam bentuk hash, bukan teks aslinya.
+
+**Kenapa notifikasi tidak muncul di iPhone?**
+Di iPhone, notifikasi hanya bisa dinyalakan dari aplikasi yang sudah dipasang ke Home Screen (iOS 16.4 ke atas). Pasang dulu, buka dari ikonnya, lalu nyalakan di **Profil → Notifikasi absen teman**.
 
 **Apakah bisa dipakai tanpa internet?**
 Aplikasi tetap terbuka, tapi absen butuh koneksi untuk mengirim dan menerima kabar teman.
@@ -177,7 +185,7 @@ Aplikasi tetap terbuka, tapi absen butuh koneksi untuk mengirim dan menerima kab
 
 - Koordinat lokasimu **tidak pernah** ditampilkan ke pengguna lain.
 - Yang terlihat oleh teman hanya status "sudah absen" beserta jamnya.
-- Foto avatar dan data profil disimpan di perangkatmu.
+- Foto avatar dan data profil disimpan di server Ngariung dan hanya terlihat oleh sesama pengguna.
 - Tidak ada iklan dan tidak ada penjualan data.
 
 ---
@@ -188,12 +196,24 @@ MIT — silakan dipakai dan dikembangkan.
 
 ## Pengembangan lokal
 
-Gunakan Node.js 24 dan pnpm. Aplikasi saat ini menyimpan profil, absen, dan hasil game di `localStorage`; belum ada verifikasi email maupun sinkronisasi antarpengguna. Skema Supabase disediakan sebagai fondasi integrasi berikutnya.
+Gunakan Node.js 24 dan pnpm. Data (akun, absen, streak, langganan notifikasi, hasil game) disimpan di Postgres dan diakses lewat Route Handler di `app/api/*`. Logika server ada di `lib/server/*` dan bisa dites tanpa server.
 
 ```sh
 pnpm install --frozen-lockfile
+pnpm db:dev          # Postgres lokal (PGlite) di 127.0.0.1:54329, data di .data/pglite
+cp .env.example .env.local
 pnpm dev
 ```
+
+Tabel dibuat otomatis saat database pertama kali dipakai; tidak ada SQL yang perlu dijalankan manual.
+
+### Deploy (Vercel)
+
+1. Di proyek Vercel: **Storage → Create Database → Neon** (paket Free, region Singapura), lalu sambungkan ke proyek ini. Vercel mengisi `DATABASE_URL` otomatis.
+2. Push ke `main`; Vercel men-deploy otomatis. Fungsi berjalan di region `sin1` (lihat `vercel.json`).
+3. Kunci Web Push (VAPID) dibuat sendiri dan disimpan di database. Isi `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` hanya jika ingin memakai kunci sendiri.
+
+Sebelum database tersambung, API menjawab `503 DB_NOT_CONFIGURED` dan aplikasi menampilkan "Server belum siap".
 
 Pemeriksaan sebelum commit:
 
@@ -201,6 +221,7 @@ Pemeriksaan sebelum commit:
 pnpm test
 pnpm typecheck
 pnpm build
+node scripts/smoke-api.mjs http://localhost:3000   # uji alur API, server harus berjalan
 ```
 
 ### Pembaruan pengalaman pengguna
@@ -213,4 +234,10 @@ pnpm build
 - Tebak Kata mendukung keyboard fisik, animasi huruf, dan petunjuk hasil tebakan.
 - Pendaftaran baru hanya menerima `@ikamasu.ac.id`. Data sesi lama tidak diubah otomatis.
 
-Untuk QA lokal, `/?demo=in&seed=1` menggunakan lokasi simulasi dan data contoh. Parameter demo ini bukan validasi lokasi produksi. Jika memakai Supabase, terapkan aturan domain pada `supabase/schema.sql` di database yang sesuai; mengubah berkas SQL tidak otomatis memperbarui database.
+### Data bersama
+
+- Absen, feed, papan peringkat, rank battle, dan rank harian dibaca dari server, jadi semua pengguna melihat data yang sama.
+- Aplikasi menyegarkan data tiap 30 detik selama terbuka dan dipakai, lalu menampilkan kabar "X baru absen".
+- Saat seseorang absen, teman yang menyalakan notifikasi dan belum absen hari itu menerima push notification (tidak dikirim pukul 00.00–05.59 WIB).
+
+Untuk QA lokal, `/?demo=in` dan `/?demo=out` memakai lokasi simulasi. Parameter demo hanya aktif di mode development dan diabaikan di produksi.
