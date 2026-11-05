@@ -1,0 +1,67 @@
+.profile-hero {
+  position: relative;
+  overflow: hidden;
+  background-image: radial-gradient(ellipse at 50% 0%, rgb(255 107 61 / 11%), transparent 70%), var(--c-card);
+}
+
+.profile-avatar-button {
+  position: relative;
+  transition: transform 200ms ease;
+}
+
+.profile-avatar-button:active { transform: scale(0.96); }
+
+.profile-avatar-edit {
+  position: absolute;
+  bottom: 0;
+  right: -3px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 3px solid var(--c-bg-2);
+  border-radius: 50%;
+  background: var(--c-accent);
+  color: var(--c-accent-ink);
+  font-size: 13px;
+}
+
+.profile-action > svg { transition: transform 200ms ease, color 200ms ease; }
+.profile-action:hover > svg { transform: translateX(3px); color: var(--c-accent); }
+.profile-saved { animation: profile-feedback 220ms ease both; }
+.profile-avatar-preview { animation: profile-feedback 260ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+.profile-dialog-close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--c-line);
+  background: var(--c-panel);
+  color: var(--c-muted);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.profile-upload:focus-within { outline: 2px solid var(--c-accent); outline-offset: 3px; }
+.profile-emoji { transition: transform 180ms ease, background-color 180ms ease, border-color 180ms ease; }
+.profile-emoji[aria-pressed="true"] { transform: scale(1.06); }
+.profile-emoji:active { transform: scale(0.94); }
+
+@keyframes profile-feedback {
+  from { opacity: 0; transform: translateY(5px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+html[data-motion="reduced"] .profile-saved,
+html[data-motion="reduced"] .profile-avatar-preview { animation: none; }
+html[data-motion="reduced"] .profile-avatar-button,
+html[data-motion="reduced"] .profile-action > svg,
+html[data-motion="reduced"] .profile-emoji { transition: none; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-saved, .profile-avatar-preview { animation: none; }
+  .profile-avatar-button, .profile-action > svg, .profile-emoji { transition: none; transform: none !important; }
+}

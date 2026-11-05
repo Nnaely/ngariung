@@ -102,14 +102,14 @@ create table if not exists public.username_history (
 -- ------------------------------------------------------------
 -- 7. GERBANG DOMAIN (server-side, tidak bisa diakali client)
 -- ------------------------------------------------------------
-create or replace function public.enforce_polban_domain()
+create or replace function public.enforce_campus_domain()
 returns trigger
 language plpgsql
 security definer
 set search_path = public
 as $$
 begin
-  if lower(new.email) !~ '^[^@[:space:]]+@polban\.ac\.id$' then
+  if lower(new.email) !~ '^[^@[:space:]]+@ikamasu\.ac\.id$' then
     raise exception 'EMAIL_DOMAIN_NOT_ALLOWED' using errcode = 'P0001';
   end if;
   return new;
@@ -119,7 +119,7 @@ $$;
 drop trigger if exists trg_enforce_domain on public.profiles;
 create trigger trg_enforce_domain
   before insert or update of email on public.profiles
-  for each row execute function public.enforce_polban_domain();
+  for each row execute function public.enforce_campus_domain();
 
 -- ------------------------------------------------------------
 -- 8. RLS

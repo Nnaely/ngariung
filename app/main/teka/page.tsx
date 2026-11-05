@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { Guard } from "@/components/Guard";
-import { BottomNav } from "@/components/BottomNav";
+import "@/components/navigation.css";
 import { dailyTeka, normalize } from "@/lib/games";
 import { useStore } from "@/lib/store";
 import { todayWIB } from "@/lib/format";
@@ -89,7 +89,7 @@ function Teka() {
           <p className="text-[14px] leading-relaxed">{teka.q}</p>
 
           {finished ? (
-            <div className="mt-5 border-t border-line pt-4">
+            <div role="status" className="panel-reveal mt-5 border-t border-line pt-4">
               <div className="flex items-center gap-2">
                 <span
                   className={`grid h-6 w-6 place-items-center rounded-full text-[11px] ${
@@ -123,7 +123,11 @@ function Teka() {
             </div>
           ) : (
             <div className="mt-5">
+              <label htmlFor="teka-answer" className="eyebrow mb-2 block">Jawabanmu</label>
               <input
+                id="teka-answer"
+                aria-invalid={wrong}
+                aria-describedby="teka-attempts"
                 value={value}
                 onChange={(e) => {
                   setValue(e.target.value);
@@ -135,25 +139,28 @@ function Teka() {
                 className="field w-full px-4 py-3 text-[13.5px] outline-none placeholder:text-muted/60"
               />
               {wrong && (
-                <p className="mt-2 text-[11px] text-danger">
+                <p key={tries} role="alert" className="answer-nudge mt-2 text-[11px] text-danger">
                   Belum tepat. Sisa {MAX_TRIES - tries} percobaan.
                 </p>
               )}
               <button
                 type="button"
                 onClick={submit}
-                className="btn-accent mt-3 w-full py-2.5 text-[12.5px]"
+                disabled={!value.trim()}
+                className="btn-accent mt-3 w-full py-2.5 text-[12.5px] disabled:opacity-40"
               >
                 Jawab
               </button>
-              <p className="mt-3 text-center text-[10px] text-muted">
+              <div aria-hidden="true" className="mt-4 flex justify-center gap-1.5">
+                {Array.from({ length: MAX_TRIES }).map((_, index) => <span key={index} className={`h-1 w-8 rounded-full transition-colors ${index < MAX_TRIES - tries ? "bg-flame" : "bg-white/10"}`} />)}
+              </div>
+              <p id="teka-attempts" className="mt-2 text-center text-[10px] text-muted">
                 {MAX_TRIES - tries} percobaan tersisa
               </p>
             </div>
           )}
         </div>
       </main>
-      <BottomNav />
     </>
   );
 }

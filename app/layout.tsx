@@ -3,11 +3,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { StoreProvider } from "@/lib/store";
 import { ServiceWorker } from "@/components/ServiceWorker";
+import { AppShell } from "@/components/AppShell";
+import { MotionProvider } from "@/components/MotionPreferences";
 
 export const metadata: Metadata = {
   title: "Ngariung — Absen dulu, baru nongkrong",
   description:
-    "Platform absen & streak nongkrong mahasiswa Polban. Khusus email @polban.ac.id.",
+    "Platform absen & streak nongkrong. Khusus email @ikamasu.ac.id.",
   manifest: "/manifest.webmanifest",
   applicationName: "Ngariung",
   appleWebApp: {
@@ -26,7 +28,6 @@ export const viewport: Viewport = {
   themeColor: "#08080A",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: "cover",
 };
 
@@ -35,7 +36,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="id">
       <body className="antialiased">
         <StoreProvider>
-          <div className="mx-auto min-h-dvh w-full max-w-[440px]">{children}</div>
+          <MotionProvider>
+            <AppShell>{children}</AppShell>
+          </MotionProvider>
         </StoreProvider>
         <ServiceWorker />
       </body>

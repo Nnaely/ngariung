@@ -13,11 +13,11 @@ Ngariung adalah aplikasi absen harian buat mahasiswa Politeknik Negeri Bandung. 
 - **Absennya jujur.** Tombol absen cuma hidup kalau GPS-mu menunjukkan kamu ada di area Pancong. Nggak bisa diabsen dari rumah.
 - **Ada rekor yang bikin nagih.** Streak harian, rekor terbaik, dan papan peringkat bikin datang tiap hari jadi punya alasan.
 - **Teman langsung tahu.** Begitu kamu absen, semua teman yang belum absen dapat notifikasi: *"kamu sudah absen hari ini, ayo segera menuju Pancong skrg!"*
-- **Khusus warga Polban.** Cuma bisa masuk pakai email kampus `@polban.ac.id`, jadi isinya benar-benar lingkaranmu.
+- **Khusus email kampus.** Cuma bisa masuk pakai email kampus `@ikamasu.ac.id`, jadi isinya benar-benar lingkaranmu.
 
 ## Siapa yang bisa pakai
 
-Semua mahasiswa yang punya email aktif **@polban.ac.id**. Email lain (Gmail, Yahoo, dsb.) akan ditolak saat mendaftar.
+Semua mahasiswa yang punya email aktif **@ikamasu.ac.id**. Email lain (Gmail, Yahoo, dsb.) akan ditolak saat mendaftar.
 
 ---
 
@@ -55,7 +55,7 @@ Kalau opsi install tidak ada sama sekali, biasanya aplikasinya sudah terpasang, 
 
 ### 2. Masuk dengan email kampus
 
-Masukkan email `@polban.ac.id`. Sistem akan menolak domain lain.
+Masukkan email `@ikamasu.ac.id`. Sistem akan menolak domain lain.
 
 ![Masuk](shots/01-login-crop.png)
 
@@ -160,7 +160,7 @@ Streak putus kalau kamu melewatkan satu hari penuh tanpa absen dan tanpa sisa fr
 Tanggal 1 setiap bulan, pukul 00.00 WIB. Sisa freeze bulan lalu tidak terbawa.
 
 **Kenapa email saya ditolak?**
-Ngariung hanya menerima email `@polban.ac.id`. Pastikan tidak ada salah ketik atau memakai email pribadi.
+Ngariung hanya menerima email `@ikamasu.ac.id`. Pastikan tidak ada salah ketik atau memakai email pribadi.
 
 **Username bisa diganti?**
 Bisa, kapan saja, lewat Profil. Username lama langsung hilang dari feed.
@@ -185,3 +185,32 @@ Aplikasi tetap terbuka, tapi absen butuh koneksi untuk mengirim dan menerima kab
 ## Lisensi
 
 MIT — silakan dipakai dan dikembangkan.
+
+## Pengembangan lokal
+
+Gunakan Node.js 24 dan pnpm. Aplikasi saat ini menyimpan profil, absen, dan hasil game di `localStorage`; belum ada verifikasi email maupun sinkronisasi antarpengguna. Skema Supabase disediakan sebagai fondasi integrasi berikutnya.
+
+```sh
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+Pemeriksaan sebelum commit:
+
+```sh
+pnpm test
+pnpm typecheck
+pnpm build
+```
+
+### Pembaruan pengalaman pengguna
+
+- Transisi halaman mengikuti arah navigasi, dengan indikator menu yang bergeser.
+- Tab peringkat dan battle mendukung tombol panah, Home, dan End.
+- Dialog profil dan absen mendukung Escape, fokus keyboard, serta animasi buka/tutup.
+- **Profil → Kurangi animasi** menyimpan preferensi perangkat; pengaturan reduced motion sistem tetap dihormati.
+- Feed dapat dicari berdasarkan username; GPS yang gagal dapat dicoba ulang.
+- Tebak Kata mendukung keyboard fisik, animasi huruf, dan petunjuk hasil tebakan.
+- Pendaftaran baru hanya menerima `@ikamasu.ac.id`. Data sesi lama tidak diubah otomatis.
+
+Untuk QA lokal, `/?demo=in&seed=1` menggunakan lokasi simulasi dan data contoh. Parameter demo ini bukan validasi lokasi produksi. Jika memakai Supabase, terapkan aturan domain pada `supabase/schema.sql` di database yang sesuai; mengubah berkas SQL tidak otomatis memperbarui database.

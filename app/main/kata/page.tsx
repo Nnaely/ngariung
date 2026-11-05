@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { Guard } from "@/components/Guard";
-import { BottomNav } from "@/components/BottomNav";
+import "@/components/navigation.css";
 import { dailyWord, scoreGuess, type LetterMark } from "@/lib/games";
 import { useStore } from "@/lib/store";
 import { todayWIB } from "@/lib/format";
@@ -29,6 +29,8 @@ function Kata() {
   const [guesses, setGuesses] = useState<string[]>([]);
   const [current, setCurrent] = useState("");
   const [recorded, setRecorded] = useState(false);
+  const [message, setMessage] = useState("");
+  const [invalidAttempt, setInvalidAttempt] = useState(0);
 
   const solved = guesses.includes(answer);
   const finished = solved || guesses.length >= 6;
@@ -65,20 +67,46 @@ function Kata() {
     return best;
   })();
 
-  const press = (key: string) => {
+  const press = useCallback((key: string) => {
     if (played || finished) return;
     if (key === "ENTER") {
-      if (current.length !== 5) return;
+      if (current.length !== 5) {
+        setMessage("Lengkapi 5 huruf dulu, ya.");
+        setInvalidAttempt((attempt) => attempt + 1);
+        return;
+      }
+      setMessage("");
       setGuesses((g) => [...g, current]);
       setCurrent("");
       return;
     }
     if (key === "DEL") {
+      setMessage("");
       setCurrent((c) => c.slice(0, -1));
       return;
     }
-    if (current.length < 5) setCurrent((c) => c + key);
-  };
+    if (/^[A-Z]$/.test(key)) {
+      setMessage("");
+      setCurrent((c) => c.length < 5 ? c + key : c);
+    }
+  }, [current, finished, played]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
+      if (target instanceof HTMLElement && (target.isContentEditable || target.closest("input, textarea, select, a"))) return;
+      // Enter/Space on a focused button belongs to that button, including the
+      // on-screen keyboard. Do not replace its native activation with a guess.
+      if (event.key === "Enter" && target instanceof HTMLElement && target.closest("button, [role='button'], [role='switch']")) return;
+      const key = event.key === "Backspace" ? "DEL" : event.key.toUpperCase();
+      if (key !== "ENTER" && key !== "DEL" && !/^[A-Z]$/.test(key)) return;
+      event.preventDefault();
+      press(key);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [press]);
 
   return (
     <>
@@ -96,8 +124,8 @@ function Kata() {
           </p>
         </header>
 
-        {played ? (
-          <div className="card mt-6 p-5 text-center">
+        {played && !recorded ? (
+          <div className="panel-reveal card mt-6 p-5 text-center">
             <p className="text-[11px] uppercase tracking-[0.16em] text-muted">
               Sudah dimainkan
             </p>
@@ -124,13 +152,17 @@ function Kata() {
                     ? current.padEnd(5, " ").split("")
                     : ["", "", "", "", ""];
                 return (
-                  <div key={r} className="grid grid-cols-5 gap-1.5">
+                  <div key={r === guesses.length ? `${r}-${invalidAttempt}` : r} className={`grid grid-cols-5 gap-1.5 ${r === guesses.length && message ? "answer-nudge" : ""}`}>
                     {letters.map((ch, c) => {
                       const m = marks?.[c];
                       return (
                         <div
-                          key={c}
-                          className={`grid h-[52px] place-items-center rounded-[10px] border text-[18px] font-bold uppercase ${
+                          key={`${c}-${m ?? ch.trim()}`}
+                          data-filled={!!ch.trim()}
+                          data-revealed={!!m}
+                          aria-label={ch.trim() ? `${ch}: ${m === "hit" ? "posisi benar" : m === "present" ? "posisi berbeda" : m === "miss" ? "tidak ada" : "belum dikirim"}` : "Kosong"}
+                          style={{ "--tile-delay": `${c * 55}ms` } as CSSProperties}
+                          className={`word-tile grid h-[52px] place-items-center rounded-[10px] border text-[18px] font-bold uppercase ${
                             m === "hit"
                               ? "border-mint/60 bg-mint/20 text-mint"
                               : m === "present"
@@ -151,11 +183,15 @@ function Kata() {
               })}
             </div>
 
-            {finished && (
-              <p className="mt-4 text-center text-[12px] font-semibold text-mint">
-                {solved ? "Benar! +1 poin harian" : `Kata hari ini: ${answer}`}
-              </p>
-            )}
+            <p role="status" className={`mt-4 min-h-5 text-center text-[11px] ${message ? "text-danger" : finished ? solved ? "font-semibold text-mint" : "font-semibold text-amber" : "text-muted"}`}>
+              {message || (finished ? solved ? "Benar! +1 poin harian" : `Kata hari ini: ${answer}` : `Percobaan ${guesses.length + 1} dari 6 · bisa pakai keyboard`)}
+            </p>
+
+            <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[9px] text-muted">
+              <span><span className="text-mint">●</span> Posisi benar</span>
+              <span><span className="text-amber">●</span> Posisi berbeda</span>
+              <span><span className="text-muted/50">●</span> Tidak ada</span>
+            </div>
 
             <div className="mt-5 space-y-1.5">
               {ROWS.map((row, i) => (
@@ -164,7 +200,9 @@ function Kata() {
                     <button
                       type="button"
                       onClick={() => press("ENTER")}
-                      className="h-10 w-[42px] shrink-0 rounded-[8px] border border-line text-[12px] font-semibold text-muted"
+                      aria-label="Kirim tebakan"
+                      disabled={finished}
+                      className="game-key h-11 w-9 shrink-0 rounded-[8px] border border-line text-[12px] font-semibold text-muted disabled:opacity-40"
                     >
                       ↵
                     </button>
@@ -176,7 +214,8 @@ function Kata() {
                         key={k}
                         type="button"
                         onClick={() => press(k)}
-                        className={`h-10 min-w-[26px] flex-1 rounded-[7px] text-[12px] font-semibold ${
+                        disabled={finished}
+                        className={`game-key h-11 min-w-0 flex-1 rounded-[7px] text-[12px] font-semibold disabled:opacity-60 ${
                           m === "hit"
                             ? "bg-mint/25 text-mint"
                             : m === "present"
@@ -194,7 +233,9 @@ function Kata() {
                     <button
                       type="button"
                       onClick={() => press("DEL")}
-                      className="h-10 w-[42px] shrink-0 rounded-[8px] border border-line text-[12px] font-semibold text-muted"
+                      aria-label="Hapus huruf terakhir"
+                      disabled={finished}
+                      className="game-key h-11 w-9 shrink-0 rounded-[8px] border border-line text-[12px] font-semibold text-muted disabled:opacity-40"
                     >
                       ⌫
                     </button>
@@ -202,10 +243,10 @@ function Kata() {
                 </div>
               ))}
             </div>
+            {finished && <Link href="/main" className="btn-quiet mt-5 block py-3 text-center text-[12px]">Kembali ke Main</Link>}
           </>
         )}
       </main>
-      <BottomNav />
     </>
   );
 }

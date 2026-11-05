@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { shiftDate, todayWIB } from "@/lib/format";
 import { FREEZES_PER_MONTH, monthKey } from "@/lib/streak";
+import { CAMPUS_EMAIL_DOMAIN } from "@/lib/identity";
 
 import { FlameIcon } from "./Icons";
 
@@ -46,7 +47,7 @@ export function Guard({ children }: { children: ReactNode }) {
             : {
                 ...s,
                 user: {
-                  email: `${username}@polban.ac.id`,
+                  email: `${username}@${CAMPUS_EMAIL_DOMAIN}`,
                   username,
                   emoji: "🔥",
                   color: "#FF5A1F",

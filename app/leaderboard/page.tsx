@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { Guard } from "@/components/Guard";
-import { BottomNav } from "@/components/BottomNav";
+import { SegmentedControl } from "@/components/SegmentedControl";
 import { Avatar } from "@/components/Avatar";
 import { StreakFlame } from "@/components/StreakFlame";
 import { useStore } from "@/lib/store";
@@ -98,29 +98,28 @@ function Leaderboard() {
           </h1>
         </header>
 
-        <div className="mt-5 flex gap-1 rounded-[12px] border border-line p-1">
-          {(
-            [
-              ["streak", "Streak"],
-              ["week", "7 hari"],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setTab(key)}
-              className={`flex-1 rounded-[9px] py-2 text-[11.5px] font-semibold transition ${
-                tab === key ? "bg-fg text-bg" : "text-muted"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          id="ranking"
+          label="Jenis peringkat"
+          value={tab}
+          onChange={setTab}
+          options={[{ value: "streak", label: "Streak" }, { value: "week", label: "7 hari" }]}
+          className="mt-5"
+        />
 
-        <div className="card mt-5 divide-y divide-line px-4">
+        <div key={tab} id="ranking-panel" role="tabpanel" tabIndex={0} aria-labelledby={`ranking-tab-${tab}`} className="panel-reveal mt-5">
+          <div className="mb-4 flex items-center justify-between rounded-[18px] border border-flame/20 bg-flame/[0.06] px-4 py-3">
+            <div>
+              <p className="eyebrow">Posisimu</p>
+              <p className="mt-1 text-[12px] text-muted">Dari {entries.length} teman nongkrong</p>
+            </div>
+            <span className="tabular text-[25px] font-extrabold tracking-tight text-flame">
+              #{entries.findIndex((entry) => entry.isMe) + 1}
+            </span>
+          </div>
+        <div className="card divide-y divide-line px-4">
           {entries.map((e, i) => (
-            <div key={e.username} className="flex items-center gap-3 py-3.5">
+            <div key={e.username} style={{ "--row-delay": `${Math.min(i, 7) * 35}ms` } as CSSProperties} className="rank-row flex items-center gap-3 py-3.5">
               <span
                 className={`tabular w-5 text-[11px] font-semibold ${
                   i === 0 ? "text-flame" : "text-muted"
@@ -149,6 +148,7 @@ function Leaderboard() {
             </div>
           ))}
         </div>
+        </div>
 
         <p className="mt-6 text-center text-[9.5px] text-muted/50">
           {tab === "streak"
@@ -157,7 +157,6 @@ function Leaderboard() {
         </p>
       </main>
 
-      <BottomNav />
     </>
   );
 }

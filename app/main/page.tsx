@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Guard } from "@/components/Guard";
-import { BottomNav } from "@/components/BottomNav";
+import { SegmentedControl } from "@/components/SegmentedControl";
 import { ChevronRightIcon, FlameIcon, GamepadIcon, LockIcon } from "@/components/Icons";
 import { checkedInToday, todayCheckIns, useStore } from "@/lib/store";
 import {
@@ -148,36 +148,28 @@ function Main() {
           </div>
 
           <div className="card mt-3 p-4">
-            <div className="flex gap-1 rounded-[12px] border border-line p-1">
-              {(
-                [
-                  ["ttt", "Tic-Tac-Toe"],
-                  ["guess", "Tebak Angka"],
-                ] as const
-              ).map(([key, label]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => {
-                    setGame(key);
-                    setMatchOpp(null);
-                    setNotice(null);
-                  }}
-                  className={`flex-1 rounded-[9px] py-2 text-[11px] font-semibold transition ${
-                    game === key ? "bg-fg text-bg" : "text-muted"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              id="battle"
+              label="Pilih game battle"
+              value={game}
+              onChange={(key) => {
+                setGame(key);
+                setMatchOpp(null);
+                setNotice(null);
+              }}
+              options={[{ value: "ttt", label: "Tic-Tac-Toe" }, { value: "guess", label: "Tebak Angka" }]}
+            />
 
+            <div key={game} id="battle-panel" role="tabpanel" tabIndex={0} aria-labelledby={`battle-tab-${game}`} className="panel-reveal">
             {!matchOpp ? (
               <div className="mt-4">
-                <label className="eyebrow mb-2 block">Nama lawan</label>
+                <label htmlFor="battle-opponent" className="eyebrow mb-2 block">Nama lawan</label>
                 <input
+                  id="battle-opponent"
                   value={opponent}
                   onChange={(e) => setOpponent(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && atPancong && startMatch()}
+                  maxLength={30}
                   placeholder="siapa yang kamu tantang?"
                   disabled={!atPancong}
                   className="field w-full px-4 py-3 text-[13.5px] outline-none placeholder:text-muted/60 disabled:opacity-50"
@@ -226,9 +218,10 @@ function Main() {
                 }}
               />
             )}
+            </div>
 
             {notice && (
-              <p className="mt-3 text-center text-[11.5px] font-semibold text-amber">
+              <p role="status" className="panel-reveal mt-3 text-center text-[11.5px] font-semibold text-amber">
                 {notice}
               </p>
             )}
@@ -243,7 +236,7 @@ function Main() {
           </div>
 
           <div className="mt-3 grid gap-2.5">
-            <Link href="/main/kata" className="card flex items-center gap-3 px-4 py-3.5">
+            <Link href="/main/kata" className="game-card card flex items-center gap-3 px-4 py-3.5">
               <span className="grid h-10 w-10 place-items-center rounded-[12px] bg-flame/12 text-[15px] font-black text-flame">
                 A
               </span>
@@ -260,7 +253,7 @@ function Main() {
               <ChevronRightIcon className="h-4 w-4 text-muted" />
             </Link>
 
-            <Link href="/main/teka" className="card flex items-center gap-3 px-4 py-3.5">
+            <Link href="/main/teka" className="game-card card flex items-center gap-3 px-4 py-3.5">
               <span className="grid h-10 w-10 place-items-center rounded-[12px] bg-mint/12 text-[15px] font-black text-mint">
                 ?
               </span>
@@ -340,7 +333,6 @@ function Main() {
         </p>
       </main>
 
-      <BottomNav />
     </>
   );
 }
@@ -387,9 +379,9 @@ function TicTacToe({
   };
 
   return (
-    <div className="mt-4">
+    <div className="panel-reveal mt-4">
       <div className="flex items-center justify-between text-[11px]">
-        <span className="text-muted">
+        <span role="status" className="text-muted">
           {result
             ? result === "draw"
               ? "Seri"
@@ -408,7 +400,8 @@ function TicTacToe({
             type="button"
             onClick={() => play(i)}
             disabled={done || !!cell}
-            className={`grid h-[78px] place-items-center rounded-[12px] border text-[26px] font-black transition ${
+            aria-label={`Baris ${Math.floor(i / 3) + 1}, kolom ${(i % 3) + 1}: ${cell ?? "kosong"}`}
+            className={`game-key grid h-[78px] place-items-center rounded-[12px] border text-[26px] font-black transition ${
               cell === "X"
                 ? "border-flame/50 bg-flame/10 text-flame"
                 : cell === "O"
@@ -416,7 +409,7 @@ function TicTacToe({
                   : "border-line text-muted"
             }`}
           >
-            {cell ?? ""}
+            {cell && <span key={cell} className="game-mark">{cell}</span>}
           </button>
         ))}
       </div>
@@ -452,13 +445,18 @@ function GuessNumber({
     { who: "A" | "B"; n: number; hint: "kecil" | "besar" | "tepat" }[]
   >([]);
   const [done, setDone] = useState(false);
+  const [error, setError] = useState("");
 
   const name = (s: "A" | "B") => (s === "A" ? me : opponent);
 
   const submit = () => {
     if (done) return;
     const n = Number(input);
-    if (!Number.isInteger(n) || n < 1 || n > 100) return;
+    if (!Number.isInteger(n) || n < 1 || n > 100) {
+      setError("Masukkan angka dari 1 sampai 100.");
+      return;
+    }
+    setError("");
 
     if (n === secret) {
       setLog((l) => [...l, { who: turn, n, hint: "tepat" }]);
@@ -478,11 +476,12 @@ function GuessNumber({
     setInput("");
     setLog([]);
     setDone(false);
+    setError("");
   };
 
   return (
-    <div className="mt-4">
-      <p className="text-center text-[12px] font-semibold">
+    <div className="panel-reveal mt-4">
+      <p role="status" className="text-center text-[12px] font-semibold">
         {done ? `${name(turn)} menebak ${secret}` : `Giliran ${name(turn)}`}
       </p>
       <p className="mt-1 text-center text-[10.5px] text-muted">
@@ -492,14 +491,18 @@ function GuessNumber({
       {!done && (
         <div className="mt-3 flex gap-2">
           <input
+            aria-label="Tebakan angka, 1 sampai 100"
+            aria-invalid={!!error}
+            aria-describedby={error ? "guess-error" : undefined}
             value={input}
-            onChange={(e) =>
-              setInput(e.target.value.replace(/[^0-9]/g, "").slice(0, 3))
-            }
+            onChange={(e) => {
+              setInput(e.target.value.replace(/[^0-9]/g, "").slice(0, 3));
+              setError("");
+            }}
             onKeyDown={(e) => e.key === "Enter" && submit()}
             inputMode="numeric"
             placeholder="1–100"
-            className="field flex-1 px-4 py-2.5 text-center text-[15px] outline-none"
+            className="field min-w-0 flex-1 px-4 py-2.5 text-center text-[15px] outline-none"
           />
           <button
             type="button"
@@ -510,6 +513,7 @@ function GuessNumber({
           </button>
         </div>
       )}
+      {error && <p id="guess-error" role="alert" className="panel-reveal mt-2 text-[11px] text-danger">{error}</p>}
 
       <ul className="mt-3 space-y-1">
         {log
@@ -517,8 +521,8 @@ function GuessNumber({
           .reverse()
           .map((g, i) => (
             <li
-              key={i}
-              className="flex items-center justify-between rounded-[10px] border border-line px-3 py-2 text-[11.5px]"
+              key={log.length - i}
+              className="panel-reveal flex items-center justify-between rounded-[10px] border border-line px-3 py-2 text-[11.5px]"
             >
               <span className="w-24 truncate text-muted">{name(g.who)}</span>
               <span className="tabular font-semibold">{g.n}</span>

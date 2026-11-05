@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Guard } from "@/components/Guard";
-import { BottomNav } from "@/components/BottomNav";
+import { Dialog } from "@/components/Dialog";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { Avatar } from "@/components/Avatar";
 import { FeedRow } from "@/components/FeedRow";
 import { Confetti } from "@/components/Confetti";
@@ -16,7 +17,7 @@ import {
   SnowflakeIcon,
 } from "@/components/Icons";
 import { checkedInToday, todayCheckIns, useStore } from "@/lib/store";
-import { nextFlameTier } from "@/lib/flame";
+import { flameTier, nextFlameTier } from "@/lib/flame";
 import { StreakFlame } from "@/components/StreakFlame";
 import {
   applyCheckIn,
@@ -66,8 +67,17 @@ function Home() {
   const [phase, setPhase] = useState<Phase>("locating");
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<SuccessInfo | null>(null);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [locationAttempt, setLocationAttempt] = useState(0);
+  const submissionTimer = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (submissionTimer.current !== null) window.clearTimeout(submissionTimer.current);
+  }, []);
 
   useEffect(() => {
+    setPhase("locating");
+    setCoords(null);
     const params = new URLSearchParams(window.location.search);
     const demo = params.get("demo");
     const latParam = params.get("lat");
@@ -118,7 +128,7 @@ function Home() {
     );
 
     return () => navigator.geolocation.clearWatch(watchId);
-  }, []);
+  }, [locationAttempt]);
 
   const user = state.user!;
   const today = todayWIB();
@@ -135,6 +145,7 @@ function Home() {
       message: broadcastBody(user.username),
       friends: 0,
     });
+    setSuccessOpen(true);
   }, [user.username]);
 
   const dist = coords ? distanceToPancong(coords.lat, coords.lng) : null;
@@ -147,6 +158,10 @@ function Home() {
   const streak = state.streak;
   const freezes = effectiveFreezes(streak, today);
   const nextTier = nextFlameTier(streak.current);
+  const currentTier = flameTier(streak.current);
+  const tierProgress = nextTier
+    ? (streak.current - currentTier.min) / (nextTier.min - currentTier.min)
+    : 1;
 
   const buttonState: "submitting" | "done" | "locked" | "ready" = submitting
     ? "submitting"
@@ -157,15 +172,15 @@ function Home() {
         : "locked";
 
   let statusText = "";
-  if (phase === "locating") statusText = "Menunggu sinyal GPS…";
+  if (done) statusText = `Sudah absen hari ini · reset dalam ${countdownToReset()}`;
+  else if (phase === "locating") statusText = "Menunggu sinyal GPS…";
   else if (phase === "denied")
     statusText =
       "Izin lokasi diblokir. Aktifkan lewat ikon gembok di address bar, lalu muat ulang.";
   else if (phase === "unsupported")
     statusText = "Perangkat ini tidak mendukung GPS.";
   else if (phase === "error")
-    statusText = "Gagal membaca lokasi. Coba muat ulang.";
-  else if (done) statusText = `Sudah absen hari ini · reset dalam ${countdownToReset()}`;
+    statusText = "Sinyal GPS belum terbaca. Coba lagi di area terbuka.";
   else if (dist === null) statusText = "Mencari lokasimu…";
   else if (!accuracyOk)
     statusText = `GPS kurang akurat (±${Math.round(coords!.accuracy)} m). Coba di area terbuka.`;
@@ -174,10 +189,11 @@ function Home() {
   else statusText = `${formatDistance(dist)} dari titik absen`;
 
   const handleCheckIn = () => {
-    if (!canCheckIn) return;
+    if (!canCheckIn || submissionTimer.current !== null) return;
     setSubmitting(true);
 
-    window.setTimeout(() => {
+    submissionTimer.current = window.setTimeout(() => {
+      submissionTimer.current = null;
       const result = applyCheckIn(streak, today);
       const entry: CheckIn = {
         id:
@@ -193,7 +209,7 @@ function Home() {
         streak: result.streak.current,
       };
 
-      update((s) => ({
+      update((s) => checkedInToday(s, today) ? s : ({
         ...s,
         streak: result.streak,
         checkIns: [entry, ...s.checkIns],
@@ -207,12 +223,13 @@ function Home() {
         message: broadcastBody(user.username),
         friends: friends.length,
       });
+      setSuccessOpen(true);
     }, 650);
   };
 
   return (
     <>
-      <main className="px-5 pb-32 pt-9">
+      <main className="page-content px-5 pb-32 pt-9">
         <header className="flex items-start justify-between">
           <div>
             <p className="eyebrow">{dayLabel()}</p>
@@ -220,12 +237,14 @@ function Home() {
               Halo, {user.username} 👋
             </h1>
           </div>
+          <Link href="/profile" aria-label="Buka profilmu" className="interactive-card rounded-full">
           <Avatar
             emoji={user.emoji}
             color={user.color}
             src={user.avatarUrl}
             size={42}
           />
+          </Link>
         </header>
 
         {/* lokasi */}
@@ -261,7 +280,7 @@ function Home() {
         </div>
 
         {/* tombol absen */}
-        <div className="relative mt-8 flex flex-col items-center">
+        <div className="reveal-section relative mt-8 flex flex-col items-center">
           <div className="relative grid h-[246px] w-[246px] place-items-center">
             {canCheckIn && (
               <span
@@ -271,12 +290,14 @@ function Home() {
             )}
             <span className="absolute inset-0 rounded-full border border-white/[0.07]" />
             <span className="absolute inset-[10px] rounded-full border border-white/[0.05]" />
+            {canCheckIn && <span aria-hidden="true" className="checkin-orbit pointer-events-none absolute inset-1 rounded-full border border-flame/40" />}
 
             <button
               type="button"
               onClick={handleCheckIn}
               disabled={!canCheckIn}
               aria-label="Absen sekarang"
+              aria-busy={submitting}
               className={`relative grid h-[192px] w-[192px] place-items-center rounded-full transition active:scale-[0.975] ${
                 buttonState === "ready"
                   ? "breathe text-[#20100a]"
@@ -335,7 +356,7 @@ function Home() {
             </button>
           </div>
 
-          <p className="mt-5 flex max-w-[300px] items-center justify-center gap-1.5 text-center text-[12px] leading-relaxed text-muted">
+          <p role="status" className="mt-5 flex max-w-[300px] items-center justify-center gap-1.5 text-center text-[12px] leading-relaxed text-muted">
             {!inRange && dist !== null && phase === "ready" && !done && (
               <span
                 className="inline-block"
@@ -346,6 +367,11 @@ function Home() {
             )}
             {statusText}
           </p>
+          {!done && (phase === "error" || phase === "denied" || (phase === "ready" && !accuracyOk)) && (
+            <button type="button" className="btn-quiet mt-3 px-4 py-2.5 text-[11px]" onClick={() => setLocationAttempt((attempt) => attempt + 1)}>
+              Coba lokasi lagi
+            </button>
+          )}
         </div>
 
         {/* streak */}
@@ -357,7 +383,7 @@ function Home() {
               </p>
               <div className="mt-1 flex items-baseline gap-1.5">
                 <span className="flame-text tabular text-[64px] font-black leading-none">
-                  {streak.current}
+                  <AnimatedNumber value={streak.current} />
                 </span>
                 <span className="mb-1 text-sm font-semibold text-muted">hari</span>
               </div>
@@ -382,6 +408,10 @@ function Home() {
             <span className="text-[10px] text-muted">
               {nextTier ? `naik di ${nextTier.min} hari` : "tingkat tertinggi"}
             </span>
+          </div>
+
+          <div className="streak-progress mt-3" role="progressbar" aria-label="Progres ke tingkatan api berikutnya" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(tierProgress * 100)} aria-valuetext={nextTier ? `${nextTier.min - streak.current} hari lagi menuju ${nextTier.name}` : "Tingkat tertinggi"}>
+            <span style={{ transform: `scaleX(${tierProgress})` }} />
           </div>
 
           <div className="mt-4 flex items-center justify-between border-t border-white/[0.06] pt-3 text-[11px]">
@@ -438,7 +468,7 @@ function Home() {
               Semua
             </Link>
           </div>
-          <div className="card mt-3 px-4 py-1">
+          <div className="card stagger-list mt-3 px-4 py-1">
             {items.slice(0, 3).map((item) => (
               <FeedRow
                 key={item.id}
@@ -455,21 +485,19 @@ function Home() {
         </section>
 
         <p className="mt-8 text-center text-[9.5px] leading-relaxed text-muted/50">
-          Data tersimpan di perangkat ini · belum tersambung Supabase
+          Streak dan aktivitasmu tersimpan di perangkat ini.
         </p>
       </main>
 
-      <BottomNav />
-
-      {success && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 px-6 backdrop-blur-sm">
-          <Confetti count={28} />
-          <div className="rise w-full max-w-[330px] rounded-[22px] border border-line bg-panel p-6">
+      <Dialog open={successOpen} onClose={() => setSuccessOpen(false)} labelledBy="checkin-success-title" className="max-w-[360px]">
+        {success && <>
+          {successOpen && <Confetti count={28} />}
+          <div className="relative">
             <div className="flex items-center gap-3">
               <span className="grid h-9 w-9 place-items-center rounded-full bg-flame/12">
                 <StreakFlame streak={success.streak} size={16} />
               </span>
-              <p className="eyebrow">Absen berhasil</p>
+              <h2 id="checkin-success-title" className="eyebrow">Absen berhasil</h2>
             </div>
 
             <div className="mt-5 flex items-baseline gap-2">
@@ -493,28 +521,24 @@ function Home() {
             <div className="mt-5 rounded-[14px] border border-line p-3.5">
               <p className="flex items-center gap-1.5 text-[9.5px] font-semibold uppercase tracking-[0.14em] text-muted">
                 <BellIcon className="h-3 w-3" />
-                Terkirim ke teman
+                Pesan semangatmu
               </p>
               <p className="mt-2 text-[12px] leading-relaxed text-fg/85">
                 “{success.message}”
               </p>
-              {success.friends > 0 && (
-                <p className="mt-1.5 text-[10px] text-muted">
-                  {success.friends} orang yang belum absen
-                </p>
-              )}
+              <p className="mt-1.5 text-[10px] text-muted">Absen tercatat di perangkat ini.</p>
             </div>
 
             <button
               type="button"
-              onClick={() => setSuccess(null)}
+              onClick={() => setSuccessOpen(false)}
               className="btn-accent mt-5 w-full py-3 text-[13.5px]"
             >
               Mantap
             </button>
           </div>
-        </div>
-      )}
+        </>}
+      </Dialog>
     </>
   );
 }

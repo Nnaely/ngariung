@@ -30,7 +30,7 @@ export function Confetti({ count = 44 }: { count?: number }) {
   );
 
   return (
-    <div aria-hidden="true">
+    <div aria-hidden="true" className="confetti-layer">
       {pieces.map((p, i) => {
         const style = {
           left: `${p.left}%`,
