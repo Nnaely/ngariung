@@ -1,8 +1,20 @@
 const TZ = "Asia/Jakarta";
 
+/** Tanggal (WIB) dari sebuah waktu, format YYYY-MM-DD. */
+export function dateWIB(d: Date): string {
+  return d.toLocaleDateString("en-CA", { timeZone: TZ });
+}
+
+/** Jam (0–23) dari sebuah waktu menurut WIB. */
+export function hourWIB(d: Date): number {
+  return Number(
+    new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: TZ }).format(d),
+  );
+}
+
 /** Tanggal hari ini di WIB, format YYYY-MM-DD. */
 export function todayWIB(): string {
-  return new Date().toLocaleDateString("en-CA", { timeZone: TZ });
+  return dateWIB(new Date());
 }
 
 /** Geser tanggal YYYY-MM-DD sebanyak `days` hari. */

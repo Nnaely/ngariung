@@ -96,6 +96,19 @@ export function applyCheckIn(s: StreakState, today: string): CheckInResult {
   };
 }
 
+/**
+ * Streak yang pantas ditampilkan ke orang lain hari ini. Streak yang sudah
+ * pasti putus (tidak bisa diselamatkan freeze lagi) tampil 0, meski nilai
+ * tersimpan baru di-reset saat pemiliknya absen berikutnya.
+ */
+export function visibleStreak(s: StreakState, today: string): number {
+  if (!s.lastDate) return 0;
+  const gap = diffDays(s.lastDate, today);
+  if (gap <= 1) return s.current;
+  if (gap === 2 && effectiveFreezes(s, today) > 0) return s.current;
+  return 0;
+}
+
 /** Notifikasi yang dikirim ke pengguna lain — teks dikunci oleh PRD R5. */
 export function broadcastBody(username: string): string {
   return `${username} sudah absen hari ini, ayo segera menuju Pancong skrg!`;
